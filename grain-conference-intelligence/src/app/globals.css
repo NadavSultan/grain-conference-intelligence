@@ -95,7 +95,7 @@ h1 {
 .provenance { font-size: 12px; }
 .filter-bar { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
 .field-label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
-.field-label input, .field-label select {
+.field-label input, .field-label select, .field-label textarea {
   border: 1px solid var(--border);
   border-radius: 8px;
   font: inherit;

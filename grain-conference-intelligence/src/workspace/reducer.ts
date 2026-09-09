@@ -1,5 +1,6 @@
 import { appendScoreSnapshot } from "@/features/conferences/scoring";
-import type { FieldListEntry, WorkspaceAction, WorkspaceStateV1 } from "@/domain/types";
+import { resolveIdentity } from "@/features/relationships/identity";
+import type { FieldListEntry, TimelineEntry, WorkspaceAction, WorkspaceStateV1 } from "@/domain/types";
 
 export function workspaceReducer(
   state: WorkspaceStateV1,
@@ -102,6 +103,132 @@ export function workspaceReducer(
         outreachDrafts: { ...state.outreachDrafts, [action.key]: next },
       };
     }
+    case "capture/draft":
+      return {
+        ...state,
+        captureDrafts: { ...state.captureDrafts, [action.id]: action.draft },
+      };
+    case "capture/save": {
+      if (
+        action.plannedMeetingId &&
+        state.timeline.some(
+          (entry) =>
+            entry.kind === "actual_encounter" &&
+            entry.plannedMeetingId === action.plannedMeetingId,
+        )
+      ) {
+        return state;
+      }
+
+      const identity = resolveIdentity(
+        {
+          name: action.name,
+          company: action.company,
+          email: action.email,
+          linkedIn: action.linkedIn,
+        },
+        state.contacts.map((contact) => ({
+          id: contact.id,
+          name: contact.name,
+          company: contact.company,
+          domain: contact.domain,
+          email: contact.email,
+          linkedIn: contact.linkedIn,
+        })),
+      );
+
+      const contactId =
+        identity.kind === "exact"
+          ? identity.contactId
+          : `captured-${action.occurredAt}-${action.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+      const contacts =
+        identity.kind === "exact"
+          ? state.contacts.map((contact) =>
+              contact.id === contactId
+                ? { ...contact, company: action.company, role: action.role || contact.role }
+                : contact,
+            )
+          : [
+              ...state.contacts,
+              {
+                id: contactId,
+                name: action.name,
+                company: action.company,
+                role: action.role,
+                email: action.email
+                  ? { value: action.email, confidence: "verified" as const }
+                  : undefined,
+                linkedIn: action.linkedIn
+                  ? { value: action.linkedIn, confidence: "verified" as const }
+                  : undefined,
+              },
+            ];
+
+      const encounter: TimelineEntry = {
+        id: action.plannedMeetingId
+          ? `enc-${action.plannedMeetingId}`
+          : `enc-${contactId}-${action.occurredAt}`,
+        personId: contactId,
+        companyId: action.company.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        conferenceId: action.conferenceId,
+        kind: "actual_encounter",
+        occurredAt: action.occurredAt,
+        summary: action.note,
+        company: action.company,
+        role: action.role,
+        plannedMeetingId: action.plannedMeetingId,
+        nextStep: action.nextStep,
+        reciprocal: action.reciprocal,
+      };
+
+      const matchReviews =
+        identity.kind === "review"
+          ? [
+              ...state.matchReviews,
+              {
+                id: `review-${contactId}`,
+                capturedContactId: contactId,
+                candidateIds: identity.candidateIds,
+                status: "pending" as const,
+              },
+            ]
+          : state.matchReviews;
+
+      return {
+        ...state,
+        contacts,
+        matchReviews,
+        timeline: [...state.timeline, encounter],
+        plannedMeetings: action.plannedMeetingId
+          ? state.plannedMeetings.map((meeting) =>
+              meeting.id === action.plannedMeetingId ? { ...meeting, outcome: "met" } : meeting,
+            )
+          : state.plannedMeetings,
+      };
+    }
+    case "match/accept": {
+      const review = state.matchReviews.find((item) => item.id === action.reviewId);
+      if (!review || review.status !== "pending") return state;
+      return {
+        ...state,
+        matchReviews: state.matchReviews.map((item) =>
+          item.id === action.reviewId ? { ...item, status: "accepted" } : item,
+        ),
+        timeline: state.timeline.map((entry) =>
+          entry.personId === review.capturedContactId
+            ? { ...entry, personId: action.contactId }
+            : entry,
+        ),
+        contacts: state.contacts.filter((contact) => contact.id !== review.capturedContactId),
+      };
+    }
+    case "match/reject":
+      return {
+        ...state,
+        matchReviews: state.matchReviews.map((item) =>
+          item.id === action.reviewId ? { ...item, status: "rejected" } : item,
+        ),
+      };
     case "workspace/replace":
     case "workspace/reset":
       return action.state;

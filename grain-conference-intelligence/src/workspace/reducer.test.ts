@@ -48,6 +48,71 @@ describe("workspace reducer", () => {
       next.timeline.filter((entry) => entry.kind === "actual_encounter"),
     ).toHaveLength(actualBefore.length);
   });
+
+  it("creates exactly one actual encounter for a repeated plannedMeetingId save", () => {
+    const seed = createDemoWorkspace();
+    const payload = {
+      type: "capture/save" as const,
+      name: "Marcus Oyelaran",
+      company: "Payloom",
+      conferenceId: "money20-eu-demo",
+      occurredAt: "2026-06-03T12:00:00.000Z",
+      note: "Agreed a corridor walkthrough next Tuesday.",
+      role: "Treasury Director",
+      email: "marcus@payloom.io",
+      nextStep: "Corridor walkthrough next Tuesday",
+      reciprocal: true,
+      plannedMeetingId: "pm-marcus",
+    };
+    const once = workspaceReducer(seed, payload);
+    const twice = workspaceReducer(once, payload);
+    expect(
+      twice.timeline.filter(
+        (entry) => entry.kind === "actual_encounter" && entry.plannedMeetingId === "pm-marcus",
+      ),
+    ).toHaveLength(1);
+  });
+
+  it("stores a job-change company on the new event without rewriting earlier events", () => {
+    const seed = createDemoWorkspace();
+    const next = workspaceReducer(seed, {
+      type: "capture/save",
+      name: "Marcus Oyelaran",
+      company: "NewCo Payments",
+      conferenceId: "money20-eu-demo",
+      occurredAt: "2026-06-03T12:00:00.000Z",
+      note: "Moved companies; still interested in corridors.",
+      role: "Treasury Director",
+      email: "marcus@payloom.io",
+      plannedMeetingId: "pm-marcus",
+    });
+
+    const prior = next.timeline.find((entry) => entry.id === "enc-marcus-money20-prior");
+    const captured = next.timeline.find((entry) => entry.plannedMeetingId === "pm-marcus");
+    const contact = next.contacts.find((contact) => contact.id === "marcus");
+
+    expect(prior?.company).toBe("Payloom");
+    expect(captured?.company).toBe("NewCo Payments");
+    expect(contact?.company).toBe("NewCo Payments");
+  });
+
+  it("queues ambiguous captures for explicit match review", () => {
+    const seed = createDemoWorkspace();
+    const next = workspaceReducer(seed, {
+      type: "capture/save",
+      name: "Sam Jones",
+      company: "Acme Payments Ltd",
+      conferenceId: "money20-eu-demo",
+      occurredAt: "2026-06-03T13:00:00.000Z",
+      note: "Met at the coffee line.",
+      role: "Head of Treasury",
+    });
+
+    expect(next.matchReviews).toHaveLength(1);
+    expect(next.matchReviews[0]?.status).toBe("pending");
+    expect(next.matchReviews[0]?.candidateIds).toContain("sam");
+    expect(next.contacts.some((contact) => contact.id.startsWith("captured-"))).toBe(true);
+  });
 });
 
 describe("workspace persistence boundary", () => {

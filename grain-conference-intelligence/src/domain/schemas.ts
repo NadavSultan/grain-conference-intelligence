@@ -129,6 +129,8 @@ export const timelineEntrySchema = z.object({
   company: z.string(),
   role: z.string(),
   plannedMeetingId: z.string().optional(),
+  nextStep: z.string().optional(),
+  reciprocal: z.boolean().optional(),
 });
 
 export const conferenceScoreResultSchema = z.object({
@@ -203,6 +205,40 @@ export const workspaceStateV1Schema = z.object({
     z.object({
       email: z.object({ subject: z.string().nullable().optional(), body: z.string() }).optional(),
       linkedin: z.object({ body: z.string() }).optional(),
+    }),
+  ),
+  contacts: z.array(
+    z.object({
+      id: z.string().min(1),
+      name: z.string().min(1),
+      company: z.string().min(1),
+      role: z.string(),
+      domain: z.string().optional(),
+      email: z.object({ value: z.string(), confidence: z.enum(["verified", "inferred"]) }).optional(),
+      linkedIn: z.object({ value: z.string(), confidence: z.literal("verified") }).optional(),
+    }),
+  ),
+  matchReviews: z.array(
+    z.object({
+      id: z.string().min(1),
+      capturedContactId: z.string().min(1),
+      candidateIds: z.array(z.string()),
+      status: z.enum(["pending", "accepted", "rejected"]),
+    }),
+  ),
+  captureDrafts: z.record(
+    z.string(),
+    z.object({
+      name: z.string(),
+      company: z.string(),
+      conferenceId: z.string(),
+      occurredAt: z.string(),
+      note: z.string(),
+      role: z.string(),
+      email: z.string(),
+      linkedIn: z.string(),
+      nextStep: z.string(),
+      plannedMeetingId: z.string().optional(),
     }),
   ),
 });

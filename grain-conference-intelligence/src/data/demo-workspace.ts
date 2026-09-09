@@ -1,6 +1,6 @@
 import { workspaceStateV1Schema } from "@/domain/schemas";
 import type { WorkspaceStateV1 } from "@/domain/types";
-import { FULL_PROFILE_IDS, PREP_SNAPSHOTS } from "@/data/prep-snapshots";
+import { FULL_PROFILE_IDS, PREP_SNAPSHOTS, PROFILES } from "@/data/prep-snapshots";
 
 const DEMO_CLOCK = "2026-05-20T09:00:00.000Z";
 
@@ -107,5 +107,19 @@ export function createDemoWorkspace(): WorkspaceStateV1 {
     },
     scoreSnapshots: [],
     outreachDrafts: {},
+    contacts: FULL_PROFILE_IDS.map((personId) => {
+      const profile = PROFILES[personId];
+      return {
+        id: personId,
+        name: profile.name,
+        company: profile.company,
+        role: profile.title,
+        domain: profile.contact.email?.value.split("@")[1],
+        email: profile.contact.email ?? undefined,
+        linkedIn: profile.contact.linkedIn,
+      };
+    }),
+    matchReviews: [],
+    captureDrafts: {},
   });
 }

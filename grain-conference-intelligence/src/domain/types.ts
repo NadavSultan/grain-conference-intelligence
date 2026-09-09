@@ -141,6 +141,8 @@ export interface TimelineEntry {
   company: string;
   role: string;
   plannedMeetingId?: string;
+  nextStep?: string;
+  reciprocal?: boolean;
 }
 
 export interface ScoreComponentResult {
@@ -172,6 +174,36 @@ export interface ConferencePlan {
   owner: string | null;
 }
 
+export interface ContactRecord {
+  id: string;
+  name: string;
+  company: string;
+  role: string;
+  domain?: string;
+  email?: { value: string; confidence: "verified" | "inferred" };
+  linkedIn?: { value: string; confidence: "verified" };
+}
+
+export interface MatchReview {
+  id: string;
+  capturedContactId: string;
+  candidateIds: string[];
+  status: "pending" | "accepted" | "rejected";
+}
+
+export interface CaptureDraft {
+  name: string;
+  company: string;
+  conferenceId: string;
+  occurredAt: string;
+  note: string;
+  role: string;
+  email: string;
+  linkedIn: string;
+  nextStep: string;
+  plannedMeetingId?: string;
+}
+
 export interface WorkspaceStateV1 {
   version: 1;
   workspaceId: string;
@@ -192,6 +224,9 @@ export interface WorkspaceStateV1 {
       linkedin?: { body: string };
     }
   >;
+  contacts: ContactRecord[];
+  matchReviews: MatchReview[];
+  captureDrafts: Record<string, CaptureDraft>;
 }
 
 export type WorkspaceAction =
@@ -233,5 +268,22 @@ export type WorkspaceAction =
       subject?: string | null;
       body: string;
     }
+  | {
+      type: "capture/save";
+      name: string;
+      company: string;
+      conferenceId: string;
+      occurredAt: string;
+      note: string;
+      role: string;
+      email?: string;
+      linkedIn?: string;
+      nextStep?: string;
+      reciprocal?: boolean;
+      plannedMeetingId?: string;
+    }
+  | { type: "match/accept"; reviewId: string; contactId: string }
+  | { type: "match/reject"; reviewId: string }
+  | { type: "capture/draft"; id: string; draft: CaptureDraft }
   | { type: "workspace/replace"; state: WorkspaceStateV1 }
   | { type: "workspace/reset"; state: WorkspaceStateV1 };
