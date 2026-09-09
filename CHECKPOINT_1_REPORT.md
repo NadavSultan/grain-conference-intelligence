@@ -8,6 +8,8 @@ The versioned local workspace uses `grain-conference-intelligence:v1`. It valida
 
 Trusted fixtures include 12 conference records, two cached Prep events, two Money20/20 demo snapshots, four complete fictional outreach profiles in the required `sam`, `david`, `priya`, `marcus` order, stable evidence identifiers, independently modelled evidence origin/tag, local labelled exhibits, fixed illustrative timing, actual draft word counts, presentation corrections, and all eight compact edge states. Marcus has one actual encounter, one planned second encounter, and separately typed outreach/reply/research history. Sam, David, Priya, and Marcus are identical across the two Money20/20 research snapshots. The added, changed, and cancelled/removed snapshot transitions are compact edge fixtures with stable IDs.
 
+Displayed factual claims now map to EvidenceRecords, timeline entries, and local exhibit anchors that contain the exact displayed value or a clearly labelled inference/Unknown gap. Contact URLs and emails are stored as dedicated records. Headlines cite attendance, labelled company-tier classification premises, and CRM presence/ownership. Prep status remains user-facing profile content and is excluded from the factual claim inventory so it is not attributed to unrelated public or CRM evidence.
+
 No conference pages, Prep UI, mobile capture, Relationship Copilot, CRM implementation, deployment, or Checkpoint 2 functionality was started.
 
 ## Conference source inventory
@@ -36,21 +38,24 @@ The Money20/20 Europe record separately identifies the fictional `money20-eu-dem
 - Full pages: Sam Jones / Acme Payments; David Cohen / Northwind Travel Group; Priya Natarajan / Lumio Marketplace; Marcus Oyelaran / Payloom.
 - Cached events: `money20-eu-demo` and `eurofinance-2026`.
 - Money snapshots: `money20-eu-demo-snapshot-1` and `money20-eu-demo-snapshot-2`; Sam, David, Priya, and Marcus retain the same record IDs and fields. Compact edge fixtures demonstrate one added (`money-company-only`), one changed (`money-edge-changed`, likely to confirmed), and one cancelled/removed (`money-edge-cancelled`) record with stable IDs.
-- Local exhibits: `sam.html`, `david.html`, `priya.html`, `marcus.html`, and `edge-fixtures.html`; every page begins with the required non-live fictional-evidence warning, and every evidence URL resolves to an actual HTML anchor.
-- Claim inventory: every displayed fact, signal, quote, evidence gap, relationship statement, and factual draft premise for Sam, David, Priya, and Marcus maps only to the specific evidence or timeline entries that support that claim. Indiscriminate bulk assignment of every profile evidence record to every claim is tested to fail.
+- Local exhibits: `sam.html`, `david.html`, `priya.html`, `marcus.html`, and `edge-fixtures.html`; every page begins with the required non-live fictional-evidence warning, and every evidence URL resolves to an actual HTML anchor whose text supports the cited claim.
+- Claim inventory: every displayed fact, signal, quote, evidence gap, relationship statement, and factual draft premise for Sam, David, Priya, and Marcus maps only to the specific evidence or timeline entries that substantively support that claim. Contact claims require the exact LinkedIn URL or email value, or an explicit email Unknown gap that is not a CRM-relationship record. Headlines require attendance, labelled tier classification with company/FX/role premises, and CRM presence/ownership. Indiscriminate bulk assignment of every profile evidence record to every claim is tested to fail.
+- Operational state: `prepStatus` remains on each profile (`To contact` / `Needs coordination`) and is not part of the factual claim inventory.
 - Edge states: open deal, probable returner, company-only signal, cancelled speaker, unknown CRM, namesake/domain ambiguity, job change, and a stalled relationship with three actual encounters spanning 203 days and no progression.
 - Workspace history: Marcus's actual encounter is separate from outreach, reply, research observation, and planned-meeting records, so the planned second meeting does not inflate encounter count.
 
 ## Test evidence
 
-Review-remediation test-first RED evidence: `pnpm vitest run src/data` exited 1 with 8 failures and 18 passes before implementation. The failures identified bulk PROFILE_CLAIMS assignment, Priya/Marcus snapshot mutations, missing compact add/change/cancel fixtures, SaaStr's unsupported Unknown audience, and the Money20/20 Middle East buyer-density URL still pointing at the key-information page.
+Final-remediation test-first RED evidence: `pnpm vitest run src/data` exited 1 with 5 failures and 25 passes before implementation. The failures identified prepStatus still listed as a factual claim, missing exact names/URLs/emails in cited exhibits, incomplete headline components, and displayed facts that were not present in the referenced evidence corpus.
 
 Final evidence:
 
-- `pnpm vitest run src/data` — exit 0; 1 file, 26 passed, 0 skipped.
-- `pnpm test:run` — exit 0; 2 files, 33 passed, 0 skipped.
+- `pnpm vitest run src/data` — exit 0; 1 file, 30 passed, 0 skipped.
+- `pnpm test:run` — exit 0; 2 files, 37 passed, 0 skipped.
 - `pnpm typecheck` — exit 0; no diagnostics.
 - `pnpm lint` — exit 0; no diagnostics.
+
+No `.only` or skipped tests are present.
 
 ## Build evidence
 
@@ -59,8 +64,9 @@ Final evidence:
 ## Git status
 
 - Branch: `feat/checkpoint-1-foundation`
-- Review-remediation starting commit: `81846370b3de8a12f30e0896c5d722fa22b5fed0`
-- Review-remediation implementation commit: `82ca369d40b49696b443671800802a582da2a4a9`
+- Final-remediation starting commit: `8a236b6c5dd93272c8db23a89b51ef155a181218`
+- Final-remediation implementation commit: `d6cf9d053278f59b43527957b0460865f9fe2e34`
+- Prior review-remediation implementation commit: `82ca369`
 - Prior remediation implementation commit: `6a10960`
 - Task 1: `58df089`
 - Task 2: `e774db7`
@@ -72,6 +78,7 @@ Final evidence:
 - The domain type/schema files were extended during Task 2 because the specified conference, evidence, and snapshot fixtures require validated shared contracts; this is within Checkpoint 1 and does not add later-checkpoint behavior.
 - A `vitest` package-script alias was added so the binding command `pnpm vitest run ...` works reliably in this Windows pnpm environment. All required scripts remain present.
 - Vercel's eventual Root Directory is recorded as `grain-conference-intelligence`, but it was not applied to an external project because no Vercel project was linked and deployment was explicitly prohibited.
+- Prep status is retained as user-facing seed content and excluded from the factual claim inventory, because a workflow state is not proved by public attendance or CRM lookup records.
 
 ## Remaining risks
 

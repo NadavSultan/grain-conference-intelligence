@@ -9,6 +9,7 @@
 - Task 2 commit: `e774db7 feat: add sourced conference and labelled prep fixtures`
 - Checkpoint 1 remediation commit: `6a10960 fix: remediate checkpoint 1 evidence fixtures`
 - Checkpoint 1 review-remediation commit: `82ca369 fix: bind claims and snapshot diffs to specific evidence`
+- Checkpoint 1 claim-provenance commit: `d6cf9d0 fix: complete checkpoint 1 claim provenance`
 - Vercel eventual Root Directory: `grain-conference-intelligence` (recorded for future project configuration; no Vercel project was linked and no deployment was performed).
 - Next authorized work: none pending independent review.
 
@@ -36,8 +37,13 @@ All commands were run from `grain-conference-intelligence` with pnpm 11.19.0.
 | `pnpm typecheck` after review remediation | 0 | TypeScript emitted no diagnostics |
 | `pnpm lint` after review remediation | 0 | ESLint emitted no diagnostics |
 | `pnpm build` after review remediation | 0 | Next.js 16.3.4 compiled and generated 4 static pages |
+| `pnpm vitest run src/data` after claim-provenance remediation | 0 | 1 file, 30 tests passed, 0 skipped |
+| `pnpm test:run` after claim-provenance remediation | 0 | 2 files, 37 tests passed, 0 skipped |
+| `pnpm typecheck` after claim-provenance remediation | 0 | TypeScript emitted no diagnostics |
+| `pnpm lint` after claim-provenance remediation | 0 | ESLint emitted no diagnostics |
+| `pnpm build` after claim-provenance remediation | 0 | Next.js 16.3.4 compiled and generated 4 static pages |
 
-Zero-skip status: **PASS — 33 passed, 0 skipped in the complete test suite.**
+Zero-skip status: **PASS — 37 passed, 0 skipped in the complete test suite.**
 
 ## Exact changed files relative to `main`
 
@@ -89,5 +95,6 @@ Zero-skip status: **PASS — 33 passed, 0 skipped in the complete test suite.**
 - Conference facts are a source-ledger snapshot verified on 2026-09-09 and must be rechecked before real planning because future event details can change.
 - Money20/20 Middle East stores its 38,000 audience and buyer-density claim against the 2026 ticket page. SaaStr AI Annual 2027 stores 10,000 from the official 2027 organizer page.
 - The four outreach profiles and compact edge cases are fictional demo data. Their local exhibits and records are labelled; the illustrative 2–4 June schedule is intentionally separate from verified Money20/20 Europe 2027 dates.
+- Prep status is user-facing seed content and is not treated as a public/CRM-proved factual claim.
 - Live research, conference pages, Prep UI, mobile capture, Relationship Copilot, CRM implementation, deployment, and all Checkpoint 2 work remain unimplemented by design.
 - Vercel Root Directory is documented as `grain-conference-intelligence`; applying it requires a future linked Vercel project and was not authorized in this checkpoint.
