@@ -277,7 +277,6 @@ export const PROFILES: Record<FullProfileId, ProfileFixture> = {
       fictionalEvidence("priya-provider-hedging-unknown", "priya", "lumio-marketplace", "Current provider and hedging approach are unknown.", null, "Evidence gap", "unknown", null),
       fictionalEvidence("priya-crm-gap", "priya", "lumio-marketplace", "No prior relationship is present in the fictional CRM fixture.", null, "CRM gap exhibit", "unknown", null),
       fictionalEvidence("priya-series-c", "priya", "lumio-marketplace", "Lumio's fictional Series C names LATAM and Southeast Asia expansion.", null, "Funding exhibit", "verified", "2025-12-20"),
-      fictionalEvidence("priya-attendance-announcement", "priya", "lumio-marketplace", "Priya later announced direct attendance at the fictional event.", "Amsterdam confirmed — see you at Money20/20.", "LinkedIn exhibit", "verified", "2026-05-26"),
     ],
   },
   marcus: {
@@ -346,7 +345,6 @@ export const PROFILES: Record<FullProfileId, ProfileFixture> = {
       fictionalEvidence("marcus-profile-company", "marcus", "payloom", "Marcus is Treasury Director and Payloom is the fictional payouts company described in the profile.", null, "Profile and company exhibit", "verified", "2026-05-20"),
       fictionalEvidence("marcus-speaker-prior", "marcus", "payloom", "Marcus appeared on the prior fictional edition programme.", null, "Historical programme exhibit", "verified", "2025-05-20"),
       fictionalEvidence("marcus-fx-job", "marcus", "payloom", "Payloom advertised a fictional emerging-markets FX treasury role.", null, "Careers exhibit", "verified", "2026-02-20"),
-      fictionalEvidence("marcus-speaker-removed", "marcus", "payloom", "The later fictional agenda removes Marcus and marks his appearance cancelled.", null, "Agenda change exhibit", "verified", "2026-05-27"),
     ],
   },
 };
@@ -376,22 +374,146 @@ function displayedPaths(profile: ProfileFixture): string[] {
   ];
 }
 
-const TIMELINE_IDS = [
-  "enc-marcus-money20-prior", "outreach-marcus-one-pager", "reply-marcus-new-year",
-  "outreach-marcus-second-follow-up", "observation-marcus-linkedin-like",
-];
+type ClaimSupport = { evidenceIds: string[]; timelineIds?: string[] };
+
+const CLAIM_SUPPORT: Record<FullProfileId, Record<string, ClaimSupport>> = {
+  sam: {
+    "identity.name": { evidenceIds: ["sam-role-linkedin"] },
+    "identity.title": { evidenceIds: ["sam-role-linkedin"] },
+    "identity.company": { evidenceIds: ["sam-company-facts"] },
+    headline: { evidenceIds: ["sam-attendance-linkedin", "sam-crm-gap"] },
+    prepStatus: { evidenceIds: ["sam-crm-gap"] },
+    "contact.linkedIn": { evidenceIds: ["sam-attendance-linkedin"] },
+    "contact.email": { evidenceIds: ["sam-email-pattern"] },
+    "attendanceEvidence.0": { evidenceIds: ["sam-attendance-linkedin"] },
+    "whyThisPersonMatters.0": { evidenceIds: ["sam-role-linkedin"] },
+    "whyThisPersonMatters.1": { evidenceIds: ["sam-posting-pattern"] },
+    "whyThisPersonMatters.2": { evidenceIds: ["sam-role-linkedin"] },
+    "whyThisPersonMatters.3": { evidenceIds: ["sam-company-facts"] },
+    "whyThisPersonMatters.4": { evidenceIds: ["sam-currency-expansion"] },
+    "whyThisPersonMatters.5": { evidenceIds: ["sam-fx-job"] },
+    "whyThisPersonMatters.6": { evidenceIds: ["sam-provider-unknown"] },
+    "whyThisPersonMatters.7": { evidenceIds: ["sam-provider-unknown"] },
+    "relationshipHistory.0": { evidenceIds: ["sam-crm-gap"] },
+    "recentSignals.0": { evidenceIds: ["sam-attendance-linkedin"] },
+    "recentSignals.1": { evidenceIds: ["sam-currency-expansion"] },
+    "recentSignals.2": { evidenceIds: ["sam-fx-job"] },
+    suggestedAngle: { evidenceIds: ["sam-attendance-linkedin", "sam-currency-expansion", "sam-fx-job"] },
+    "drafts.email.body": { evidenceIds: ["sam-attendance-linkedin", "sam-currency-expansion"] },
+    "drafts.linkedIn.body": { evidenceIds: ["sam-attendance-linkedin", "sam-currency-expansion"] },
+    nextAction: { evidenceIds: ["sam-attendance-linkedin", "sam-email-pattern"] },
+  },
+  david: {
+    "identity.name": { evidenceIds: ["david-profile-company"] },
+    "identity.title": { evidenceIds: ["david-profile-company"] },
+    "identity.company": { evidenceIds: ["david-profile-company"] },
+    headline: { evidenceIds: ["david-agenda-panel", "david-crm-history"] },
+    prepStatus: { evidenceIds: ["david-crm-history"] },
+    "contact.linkedIn": { evidenceIds: ["david-profile-company"] },
+    "contact.email": { evidenceIds: ["david-crm-history"] },
+    "attendanceEvidence.0": { evidenceIds: ["david-agenda-panel"] },
+    "attendanceEvidence.1": { evidenceIds: ["david-x-panel"] },
+    "whyThisPersonMatters.0": { evidenceIds: ["david-profile-company"] },
+    "whyThisPersonMatters.1": { evidenceIds: ["david-profile-company"] },
+    "whyThisPersonMatters.2": { evidenceIds: ["david-profile-company"] },
+    "whyThisPersonMatters.3": { evidenceIds: ["david-fx-margin"] },
+    "whyThisPersonMatters.4": { evidenceIds: ["david-forwards", "david-bank-inference"] },
+    "whyThisPersonMatters.5": { evidenceIds: ["david-provider-unknown"] },
+    "relationshipHistory.0": { evidenceIds: ["david-crm-history"] },
+    "relationshipHistory.1": { evidenceIds: ["david-crm-history"] },
+    "relationshipHistory.2": { evidenceIds: ["david-crm-history"] },
+    "relationshipHistory.3": { evidenceIds: ["david-crm-history"] },
+    "recentSignals.0": { evidenceIds: ["david-x-panel"] },
+    "recentSignals.1": { evidenceIds: ["david-fx-margin", "david-forwards"] },
+    "recentSignals.2": { evidenceIds: ["david-thai-acquisition"] },
+    suggestedAngle: { evidenceIds: ["david-crm-history", "david-fx-margin", "david-thai-acquisition", "david-agenda-panel"] },
+    coordinationStep: { evidenceIds: ["david-crm-history", "david-agenda-panel"] },
+    "relationshipRead.text": { evidenceIds: ["david-crm-history"] },
+    "relationshipRead.counterEvidence.0": { evidenceIds: ["david-crm-history"] },
+    "relationshipRead.counterEvidence.1": { evidenceIds: ["david-crm-history"] },
+    "drafts.email.body": { evidenceIds: ["david-agenda-panel", "david-forwards", "david-thai-acquisition"] },
+    nextAction: { evidenceIds: ["david-crm-history"] },
+  },
+  priya: {
+    "identity.name": { evidenceIds: ["priya-profile-company"] },
+    "identity.title": { evidenceIds: ["priya-role"] },
+    "identity.company": { evidenceIds: ["priya-profile-company"] },
+    headline: { evidenceIds: ["priya-dinner-rsvp", "priya-crm-gap"] },
+    prepStatus: { evidenceIds: ["priya-crm-gap"] },
+    "contact.linkedIn": { evidenceIds: ["priya-profile-company"] },
+    "contact.emailGap": { evidenceIds: ["priya-crm-gap"] },
+    "attendanceEvidence.0": { evidenceIds: ["priya-dinner-rsvp"] },
+    "attendanceEvidence.1": { evidenceIds: ["priya-speaker-sponsor-gap"] },
+    "whyThisPersonMatters.0": { evidenceIds: ["priya-profile-company"] },
+    "whyThisPersonMatters.1": { evidenceIds: ["priya-role"] },
+    "whyThisPersonMatters.2": { evidenceIds: ["priya-profile-company"] },
+    "whyThisPersonMatters.3": { evidenceIds: ["priya-payouts"] },
+    "whyThisPersonMatters.4": { evidenceIds: ["priya-fx-owner-unknown"] },
+    "whyThisPersonMatters.5": { evidenceIds: ["priya-provider-hedging-unknown"] },
+    "whyThisPersonMatters.6": { evidenceIds: ["priya-provider-hedging-unknown"] },
+    "relationshipHistory.0": { evidenceIds: ["priya-crm-gap"] },
+    "recentSignals.0": { evidenceIds: ["priya-dinner-rsvp"] },
+    "recentSignals.1": { evidenceIds: ["priya-payouts"] },
+    "recentSignals.2": { evidenceIds: ["priya-series-c"] },
+    suggestedAngle: { evidenceIds: ["priya-payouts", "priya-fx-owner-unknown"] },
+    "relationshipRead.counterEvidence.0": { evidenceIds: ["priya-dinner-rsvp"] },
+    "relationshipRead.counterEvidence.1": { evidenceIds: ["priya-fx-owner-unknown"] },
+    "drafts.linkedIn.body": { evidenceIds: ["priya-dinner-rsvp", "priya-payouts", "priya-fx-owner-unknown"] },
+    nextAction: { evidenceIds: ["priya-dinner-rsvp", "priya-crm-gap"] },
+  },
+  marcus: {
+    "identity.name": { evidenceIds: ["marcus-profile-company"] },
+    "identity.title": { evidenceIds: ["marcus-profile-company"] },
+    "identity.company": { evidenceIds: ["marcus-profile-company"] },
+    headline: { evidenceIds: ["marcus-speaker-current", "marcus-prior-encounter"] },
+    prepStatus: { evidenceIds: ["marcus-speaker-current"] },
+    "contact.linkedIn": { evidenceIds: ["marcus-profile-company"] },
+    "contact.email": { evidenceIds: ["marcus-profile-company"], timelineIds: ["reply-marcus-new-year"] },
+    "attendanceEvidence.0": { evidenceIds: ["marcus-speaker-current"] },
+    "attendanceEvidence.1": { evidenceIds: ["marcus-speaker-prior"] },
+    "whyThisPersonMatters.0": { evidenceIds: ["marcus-profile-company"] },
+    "whyThisPersonMatters.1": { evidenceIds: ["marcus-prior-encounter"], timelineIds: ["enc-marcus-money20-prior"] },
+    "whyThisPersonMatters.2": { evidenceIds: ["marcus-profile-company"] },
+    "whyThisPersonMatters.3": { evidenceIds: ["marcus-series-c"] },
+    "whyThisPersonMatters.4": { evidenceIds: ["marcus-prior-encounter"], timelineIds: ["enc-marcus-money20-prior"] },
+    "whyThisPersonMatters.5": { evidenceIds: ["marcus-prior-encounter"], timelineIds: ["enc-marcus-money20-prior"] },
+    "relationshipHistory.0": { evidenceIds: ["marcus-prior-encounter"], timelineIds: ["enc-marcus-money20-prior"] },
+    "relationshipHistory.1": { evidenceIds: [], timelineIds: ["outreach-marcus-one-pager", "reply-marcus-new-year"] },
+    "relationshipHistory.2": { evidenceIds: [], timelineIds: ["outreach-marcus-second-follow-up"] },
+    "relationshipHistory.3": { evidenceIds: [], timelineIds: ["observation-marcus-linkedin-like"] },
+    "relationshipHistory.4": { evidenceIds: ["marcus-prior-encounter"] },
+    "relationshipHistory.5": { evidenceIds: ["marcus-speaker-current"] },
+    "recentSignals.0": { evidenceIds: ["marcus-speaker-current"] },
+    "recentSignals.1": { evidenceIds: ["marcus-series-c"] },
+    "recentSignals.2": { evidenceIds: ["marcus-fx-job"] },
+    suggestedAngle: { evidenceIds: ["marcus-prior-encounter", "marcus-series-c", "marcus-warming-hypothesis", "marcus-speaker-current"], timelineIds: ["enc-marcus-money20-prior"] },
+    "relationshipRead.text": { evidenceIds: ["marcus-warming-hypothesis"], timelineIds: ["enc-marcus-money20-prior", "outreach-marcus-second-follow-up"] },
+    "relationshipRead.counterEvidence.0": { evidenceIds: [], timelineIds: ["outreach-marcus-second-follow-up"] },
+    "relationshipRead.counterEvidence.1": { evidenceIds: ["marcus-warming-hypothesis"], timelineIds: ["observation-marcus-linkedin-like"] },
+    "relationshipRead.counterEvidence.2": { evidenceIds: [], timelineIds: ["enc-marcus-money20-prior"] },
+    "drafts.email.body": { evidenceIds: ["marcus-prior-encounter", "marcus-series-c", "marcus-speaker-current"], timelineIds: ["enc-marcus-money20-prior"] },
+    "drafts.linkedIn.body": { evidenceIds: ["marcus-speaker-current", "marcus-prior-encounter", "marcus-series-c"], timelineIds: ["enc-marcus-money20-prior"] },
+    nextAction: { evidenceIds: ["marcus-speaker-current"], timelineIds: ["reply-marcus-new-year"] },
+  },
+};
 
 export const PROFILE_CLAIMS = Object.fromEntries(FULL_PROFILE_IDS.map((personId) => {
   const profile = PROFILES[personId];
-  const evidenceIds = profile.evidence.map((item) => item.id);
+  const support = CLAIM_SUPPORT[personId];
   return [personId, profileClaimInventorySchema.parse({
     personId,
     companyId: COMPANY_IDS[personId],
-    claims: displayedPaths(profile).map((displayPath) => ({
-      displayPath,
-      evidenceIds,
-      timelineIds: personId === "marcus" && (displayPath.startsWith("relationship") || displayPath === "suggestedAngle" || displayPath.startsWith("drafts.")) ? TIMELINE_IDS : [],
-    })),
+    claims: displayedPaths(profile).map((displayPath) => {
+      const mapping = support[displayPath];
+      if (!mapping) {
+        throw new Error(`Missing claim support for ${personId}:${displayPath}`);
+      }
+      return {
+        displayPath,
+        evidenceIds: mapping.evidenceIds,
+        timelineIds: mapping.timelineIds ?? [],
+      };
+    }),
   })];
 })) as Record<FullProfileId, ProfileClaimInventory>;
 
@@ -417,6 +539,15 @@ export const EDGE_FIXTURES = {
     personId: null,
     companyId: "meridian-remit",
     claim: "The fictional company announces a booth; no employee is named.",
+    origin: "fictional_demo" as const,
+  },
+  changedAttendance: {
+    id: "edge-changed",
+    fictionalLabel: "Fictional demo scenario",
+    personId: "edge-changed",
+    companyId: "fictional-changed-co",
+    attendanceFrom: "likely" as AttendanceConfidence,
+    attendanceTo: "confirmed" as AttendanceConfidence,
     origin: "fictional_demo" as const,
   },
   cancelledSpeaker: {
@@ -467,10 +598,13 @@ export const EDGE_FIXTURES = {
 };
 
 export const EDGE_EVIDENCE: EvidenceRecord[] = [
+  fictionalEvidence("edge-cancelled-listed", "edge-cancelled", "fictional-cancelled-co", "The fictional speaker is listed on the current agenda.", null, "Edge fixture exhibit", "verified", "2026-05-20"),
   fictionalEvidence("edge-cancelled-removed", "edge-cancelled", "fictional-cancelled-co", "The fictional speaker listing was removed from the current agenda.", null, "Edge fixture exhibit", "verified", "2026-05-27"),
   fictionalEvidence("edge-open-deal-evidence", "edge-open-deal", "fictional-open-deal-co", "The fictional CRM account has an open deal owned by another rep.", null, "Edge fixture exhibit", "verified", null),
   fictionalEvidence("edge-returner-evidence", "edge-returner", "fictional-returner-co", "The person attended two prior fictional editions, but current attendance is unconfirmed.", null, "Edge fixture exhibit", "inferred", null),
   fictionalEvidence("edge-company-only-evidence", null, "meridian-remit", "The fictional company announced attendance without naming an individual.", null, "Edge fixture exhibit", "cited", "2026-08-18"),
+  fictionalEvidence("edge-changed-likely", "edge-changed", "fictional-changed-co", "A compact fixture is likely attending from a side-event RSVP.", null, "Edge fixture exhibit", "cited", "2026-05-20"),
+  fictionalEvidence("edge-changed-confirmed", "edge-changed", "fictional-changed-co", "A later compact fixture announcement confirms attendance.", "Amsterdam confirmed — see you at Money20/20.", "Edge fixture exhibit", "verified", "2026-05-26"),
 ];
 
 export const ALL_EVIDENCE: EvidenceRecord[] = [
@@ -488,6 +622,8 @@ const moneySnapshot1 = prepSnapshotSchema.parse({
     { id: "money-david", personId: "david", companyId: "northwind-travel", attendanceConfidence: "confirmed", companyTier: "A", roleFit: "decision_maker", crmState: "owned_by_other", prepStatus: "to_contact", evidenceIds: ["david-agenda-panel"], currentEdition: true, cancelled: false },
     { id: "money-priya", personId: "priya", companyId: "lumio-marketplace", attendanceConfidence: "likely", companyTier: "B", roleFit: "influencer", crmState: "not_present", prepStatus: "to_contact", evidenceIds: ["priya-dinner-rsvp"], currentEdition: true, cancelled: false },
     { id: "money-marcus", personId: "marcus", companyId: "payloom", attendanceConfidence: "confirmed", companyTier: "A", roleFit: "decision_maker", crmState: "owned_by_me", prepStatus: "to_contact", evidenceIds: ["marcus-speaker-current"], currentEdition: true, cancelled: false },
+    { id: "money-edge-changed", personId: "edge-changed", companyId: "fictional-changed-co", attendanceConfidence: "likely", companyTier: "B", roleFit: "influencer", crmState: "not_present", prepStatus: "to_contact", evidenceIds: ["edge-changed-likely"], currentEdition: true, cancelled: false },
+    { id: "money-edge-cancelled", personId: "edge-cancelled", companyId: "fictional-cancelled-co", attendanceConfidence: "confirmed", companyTier: "B", roleFit: "other", crmState: "unknown", prepStatus: "to_contact", evidenceIds: ["edge-cancelled-listed"], currentEdition: true, cancelled: false },
   ],
 });
 
@@ -499,8 +635,10 @@ const moneySnapshot2 = prepSnapshotSchema.parse({
   records: [
     moneySnapshot1.records[0],
     moneySnapshot1.records[1],
-    { ...moneySnapshot1.records[2], attendanceConfidence: "confirmed", evidenceIds: ["priya-dinner-rsvp", "priya-attendance-announcement"] },
-    { ...moneySnapshot1.records[3], attendanceConfidence: "probable_returner", prepStatus: "not_now", evidenceIds: ["marcus-speaker-current", "marcus-speaker-removed", "marcus-speaker-prior"], currentEdition: false, cancelled: true },
+    moneySnapshot1.records[2],
+    moneySnapshot1.records[3],
+    { ...moneySnapshot1.records[4], attendanceConfidence: "confirmed", evidenceIds: ["edge-changed-likely", "edge-changed-confirmed"] },
+    { ...moneySnapshot1.records[5], attendanceConfidence: "unknown", prepStatus: "not_now", evidenceIds: ["edge-cancelled-listed", "edge-cancelled-removed"], currentEdition: false, cancelled: true },
     { id: "money-company-only", personId: null, companyId: "meridian-remit", attendanceConfidence: "likely", companyTier: "A", roleFit: "unknown", crmState: "not_present", prepStatus: "to_contact", evidenceIds: ["edge-company-only-evidence"], currentEdition: true, cancelled: false },
   ],
 });
