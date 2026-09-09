@@ -23,7 +23,12 @@ interface WorkspaceContextValue {
   resetWorkspace: () => void;
 }
 
-const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
+const WorkspaceContext = createContext<WorkspaceContextValue>({
+  state: createDemoWorkspace(),
+  hydrated: false,
+  dispatch: () => undefined,
+  resetWorkspace: () => undefined,
+});
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(workspaceReducer, undefined, createDemoWorkspace);
@@ -61,19 +66,19 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [hydrated, state],
   );
 
-  if (!hydrated) {
-    return (
-      <div className="workspace-loading" role="status" aria-live="polite">
-        Loading conference workspace…
-      </div>
-    );
-  }
-
-  return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
+  return (
+    <WorkspaceContext.Provider value={value}>
+      {hydrated ? (
+        children
+      ) : (
+        <div className="workspace-loading" role="status" aria-live="polite">
+          Loading conference workspace…
+        </div>
+      )}
+    </WorkspaceContext.Provider>
+  );
 }
 
 export function useWorkspace(): WorkspaceContextValue {
-  const value = useContext(WorkspaceContext);
-  if (!value) throw new Error("useWorkspace must be used inside WorkspaceProvider");
-  return value;
+  return useContext(WorkspaceContext);
 }
