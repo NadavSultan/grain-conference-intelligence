@@ -96,5 +96,15 @@ export function createDemoWorkspace(): WorkspaceStateV1 {
     coordinationAcknowledgements: {},
     activeSnapshotIds,
     simulatedResearchRuns: {},
+    conferencePlans: {
+      "money20-usa-2026": { decision: "attend", owner: "Nadav" },
+      "itb-berlin-2027": { decision: "attend", owner: "Nadav" },
+      "money20-asia-2027": { decision: "attend", owner: "Jordan" },
+      "money20-middle-east-2026": { decision: "attend", owner: "Alex" },
+      "eurofinance-2026": { decision: "attend", owner: "Alex" },
+      "business-travel-show-europe-2027": { decision: "watch", owner: "Sam" },
+      "traveltech-show-2027": { decision: "watch", owner: "Sam" },
+    },
+    scoreSnapshots: [],
   });
 }

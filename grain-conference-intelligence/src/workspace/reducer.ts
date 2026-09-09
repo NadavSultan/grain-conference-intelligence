@@ -1,3 +1,4 @@
+import { appendScoreSnapshot } from "@/features/conferences/scoring";
 import type { FieldListEntry, WorkspaceAction, WorkspaceStateV1 } from "@/domain/types";
 
 export function workspaceReducer(
@@ -25,6 +26,37 @@ export function workspaceReducer(
             ? { ...meeting, outcome: action.outcome }
             : meeting,
         ),
+      };
+    case "plan/set-decision": {
+      const current = state.conferencePlans[action.conferenceId] ?? {
+        decision: "undecided" as const,
+        owner: null,
+      };
+      return {
+        ...state,
+        conferencePlans: {
+          ...state.conferencePlans,
+          [action.conferenceId]: { ...current, decision: action.decision },
+        },
+      };
+    }
+    case "plan/set-owner": {
+      const current = state.conferencePlans[action.conferenceId] ?? {
+        decision: "undecided" as const,
+        owner: null,
+      };
+      return {
+        ...state,
+        conferencePlans: {
+          ...state.conferencePlans,
+          [action.conferenceId]: { ...current, owner: action.owner },
+        },
+      };
+    }
+    case "score/record-snapshot":
+      return {
+        ...state,
+        scoreSnapshots: appendScoreSnapshot(state.scoreSnapshots, action.score),
       };
     case "workspace/replace":
     case "workspace/reset":

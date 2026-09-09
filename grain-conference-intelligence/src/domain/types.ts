@@ -26,6 +26,10 @@ export type CrmState =
   | "owned_by_other"
   | "open_deal"
   | "unknown";
+export type ConferenceTier = "A" | "B" | "C";
+export type PlanDecision = "attend" | "watch" | "skip" | "undecided";
+export type ComponentScoreStatus = "sourced" | "unknown";
+export type ResearchedRoomStatus = "unknown" | "researched";
 
 export type ScoreComponent =
   | "vertical_fit"
@@ -139,6 +143,35 @@ export interface TimelineEntry {
   plannedMeetingId?: string;
 }
 
+export interface ScoreComponentResult {
+  component: ScoreComponent;
+  points: number;
+  max: number;
+  status: ComponentScoreStatus;
+  rationale: string;
+  sourceUrl: string;
+  verifiedAt: string;
+}
+
+export interface ConferenceScoreResult {
+  conferenceId: string;
+  snapshotId: string | null;
+  scoredAt: string;
+  researchedAt: string | null;
+  q: number | null;
+  researchedRoomPoints: number;
+  researchedRoomStatus: ResearchedRoomStatus;
+  coverageWarning: string | null;
+  components: ScoreComponentResult[];
+  total: number;
+  tier: ConferenceTier;
+}
+
+export interface ConferencePlan {
+  decision: PlanDecision;
+  owner: string | null;
+}
+
 export interface WorkspaceStateV1 {
   version: 1;
   workspaceId: string;
@@ -150,6 +183,8 @@ export interface WorkspaceStateV1 {
   coordinationAcknowledgements: Record<string, string>;
   activeSnapshotIds: Record<string, string>;
   simulatedResearchRuns: Record<string, string>;
+  conferencePlans: Record<string, ConferencePlan>;
+  scoreSnapshots: ConferenceScoreResult[];
 }
 
 export type WorkspaceAction =
@@ -159,5 +194,12 @@ export type WorkspaceAction =
       plannedMeetingId: string;
       outcome: "met" | "did_not_meet";
     }
+  | {
+      type: "plan/set-decision";
+      conferenceId: string;
+      decision: PlanDecision;
+    }
+  | { type: "plan/set-owner"; conferenceId: string; owner: string | null }
+  | { type: "score/record-snapshot"; score: ConferenceScoreResult }
   | { type: "workspace/replace"; state: WorkspaceStateV1 }
   | { type: "workspace/reset"; state: WorkspaceStateV1 };

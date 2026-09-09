@@ -131,6 +131,41 @@ export const timelineEntrySchema = z.object({
   plannedMeetingId: z.string().optional(),
 });
 
+export const conferenceScoreResultSchema = z.object({
+  conferenceId: z.string().min(1),
+  snapshotId: z.string().min(1).nullable(),
+  scoredAt: z.string().min(1),
+  researchedAt: z.string().min(1).nullable(),
+  q: z.number().int().nonnegative().nullable(),
+  researchedRoomPoints: z.number().int().nonnegative(),
+  researchedRoomStatus: z.enum(["unknown", "researched"]),
+  coverageWarning: z.string().min(1).nullable(),
+  components: z.array(
+    z.object({
+      component: z.enum([
+        "vertical_fit",
+        "buyer_role_density",
+        "fx_relevance",
+        "meeting_accessibility",
+        "trip_efficiency",
+      ]),
+      points: z.number().int().nonnegative(),
+      max: z.number().int().positive(),
+      status: z.enum(["sourced", "unknown"]),
+      rationale: z.string().min(1),
+      sourceUrl: z.string().min(1),
+      verifiedAt: z.string().min(1),
+    }),
+  ),
+  total: z.number().int().nonnegative(),
+  tier: z.enum(["A", "B", "C"]),
+});
+
+export const conferencePlanSchema = z.object({
+  decision: z.enum(["attend", "watch", "skip", "undecided"]),
+  owner: z.string().min(1).nullable(),
+});
+
 export const workspaceStateV1Schema = z.object({
   version: z.literal(1),
   workspaceId: z.string().min(1),
@@ -161,4 +196,6 @@ export const workspaceStateV1Schema = z.object({
   coordinationAcknowledgements: z.record(z.string(), z.string()),
   activeSnapshotIds: z.record(z.string(), z.string()),
   simulatedResearchRuns: z.record(z.string(), z.string()),
+  conferencePlans: z.record(z.string(), conferencePlanSchema),
+  scoreSnapshots: z.array(conferenceScoreResultSchema),
 });
