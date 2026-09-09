@@ -27,6 +27,77 @@ export type CrmState =
   | "open_deal"
   | "unknown";
 
+export type ScoreComponent =
+  | "vertical_fit"
+  | "buyer_role_density"
+  | "fx_relevance"
+  | "meeting_accessibility"
+  | "trip_efficiency";
+
+export interface ConferenceScoreEvidence {
+  id: string;
+  component: ScoreComponent;
+  claim: string;
+  sourceUrl: string;
+  verifiedAt: string;
+  tag: EvidenceTag;
+}
+
+export interface ConferenceRecord {
+  id: string;
+  name: string;
+  edition: string;
+  startDate: string;
+  endDate: string;
+  location: string;
+  geography: "Europe" | "North America" | "Middle East" | "Asia Pacific";
+  vertical: "fintech" | "treasury" | "travel" | "saas";
+  sourceUrl: string;
+  verifiedAt: string;
+  audienceSize: number | null;
+  audienceSizeSource: string | null;
+  scoreEvidence: ConferenceScoreEvidence[];
+  demoScenarioId?: string;
+  demoDateWarning?: string;
+}
+
+export interface EvidenceRecord {
+  id: string;
+  personId: string | null;
+  companyId: string;
+  edition: string;
+  claim: string;
+  quote: string | null;
+  exhibitUrl: string;
+  platform: string;
+  publishedAt: string | null;
+  discoveredAt: string;
+  tag: EvidenceTag;
+  origin: EvidenceOrigin;
+}
+
+export interface PrepSnapshotRecord {
+  id: string;
+  personId: string | null;
+  companyId: string;
+  attendanceConfidence: AttendanceConfidence;
+  companyTier: CompanyTier;
+  roleFit: RoleFit;
+  crmState: CrmState;
+  prepStatus: PrepStatus;
+  evidenceIds: string[];
+  currentEdition: boolean;
+  cancelled: boolean;
+}
+
+export interface PrepSnapshot {
+  id: string;
+  conferenceId: string;
+  researchedAt: string;
+  simulatedAt: string | null;
+  records: PrepSnapshotRecord[];
+}
+
 export interface FieldListEntry {
   id: string;
   conferenceId: string;

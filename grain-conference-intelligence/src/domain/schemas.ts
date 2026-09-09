@@ -12,6 +12,94 @@ export const evidenceTagSchema = z.enum([
   "unknown",
 ]);
 
+export const conferenceScoreEvidenceSchema = z.object({
+  id: z.string().min(1),
+  component: z.enum([
+    "vertical_fit",
+    "buyer_role_density",
+    "fx_relevance",
+    "meeting_accessibility",
+    "trip_efficiency",
+  ]),
+  claim: z.string().min(1),
+  sourceUrl: z.url(),
+  verifiedAt: z.string().min(1),
+  tag: evidenceTagSchema,
+});
+
+export const conferenceRecordSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  edition: z.string().min(1),
+  startDate: z.string().min(1),
+  endDate: z.string().min(1),
+  location: z.string().min(1),
+  geography: z.enum(["Europe", "North America", "Middle East", "Asia Pacific"]),
+  vertical: z.enum(["fintech", "treasury", "travel", "saas"]),
+  sourceUrl: z.url(),
+  verifiedAt: z.string().min(1),
+  audienceSize: z.number().int().positive().nullable(),
+  audienceSizeSource: z.url().nullable(),
+  scoreEvidence: z.array(conferenceScoreEvidenceSchema).length(5),
+  demoScenarioId: z.string().optional(),
+  demoDateWarning: z.string().optional(),
+});
+
+export const evidenceRecordSchema = z.object({
+  id: z.string().min(1),
+  personId: z.string().nullable(),
+  companyId: z.string().min(1),
+  edition: z.string().min(1),
+  claim: z.string().min(1),
+  quote: z.string().nullable(),
+  exhibitUrl: z.string().startsWith("/evidence/"),
+  platform: z.string().min(1),
+  publishedAt: z.string().nullable(),
+  discoveredAt: z.string().min(1),
+  tag: evidenceTagSchema,
+  origin: evidenceOriginSchema,
+});
+
+export const prepSnapshotSchema = z.object({
+  id: z.string().min(1),
+  conferenceId: z.string().min(1),
+  researchedAt: z.string().min(1),
+  simulatedAt: z.string().nullable(),
+  records: z.array(
+    z.object({
+      id: z.string().min(1),
+      personId: z.string().nullable(),
+      companyId: z.string().min(1),
+      attendanceConfidence: z.enum([
+        "confirmed",
+        "likely",
+        "probable_returner",
+        "inferred",
+        "unknown",
+      ]),
+      companyTier: z.enum(["A", "B", "C", "excluded", "unknown"]),
+      roleFit: z.enum(["decision_maker", "influencer", "other", "unknown"]),
+      crmState: z.enum([
+        "not_present",
+        "owned_by_me",
+        "owned_by_other",
+        "open_deal",
+        "unknown",
+      ]),
+      prepStatus: z.enum([
+        "to_contact",
+        "contacted",
+        "replied",
+        "meeting_booked",
+        "not_now",
+      ]),
+      evidenceIds: z.array(z.string().min(1)),
+      currentEdition: z.boolean(),
+      cancelled: z.boolean(),
+    }),
+  ),
+});
+
 export const timelineEntrySchema = z.object({
   id: z.string().min(1),
   personId: z.string().min(1),

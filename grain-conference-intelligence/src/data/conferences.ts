@@ -1,0 +1,301 @@
+import { conferenceRecordSchema } from "@/domain/schemas";
+import type {
+  ConferenceRecord,
+  ConferenceScoreEvidence,
+  EvidenceTag,
+  ScoreComponent,
+} from "@/domain/types";
+
+const VERIFIED_AT = "2026-09-09";
+const COMPONENTS: ScoreComponent[] = [
+  "vertical_fit",
+  "buyer_role_density",
+  "fx_relevance",
+  "meeting_accessibility",
+  "trip_efficiency",
+];
+
+type Claims = Record<ScoreComponent, { claim: string; tag?: EvidenceTag }>;
+
+function evidence(
+  conferenceId: string,
+  sourceUrl: string,
+  claims: Claims,
+): ConferenceScoreEvidence[] {
+  return COMPONENTS.map((component) => ({
+    id: `${conferenceId}:${component}`,
+    component,
+    claim: claims[component].claim,
+    sourceUrl,
+    verifiedAt: VERIFIED_AT,
+    tag: claims[component].tag ?? "verified",
+  }));
+}
+
+function defineConference(
+  record: Omit<ConferenceRecord, "verifiedAt" | "scoreEvidence"> & { claims: Claims },
+): ConferenceRecord {
+  const { claims, ...conference } = record;
+  return conferenceRecordSchema.parse({
+    ...conference,
+    verifiedAt: VERIFIED_AT,
+    scoreEvidence: evidence(conference.id, conference.sourceUrl, claims),
+  });
+}
+
+const unknownTrip = (location: string) => ({
+  claim: `${location} is verified; no same-city companion event is asserted for trip efficiency.`,
+  tag: "unknown" as const,
+});
+
+export const CONFERENCES: ConferenceRecord[] = [
+  defineConference({
+    id: "money20-europe-2027",
+    name: "Money20/20 Europe",
+    edition: "2027",
+    startDate: "2027-06-08",
+    endDate: "2027-06-10",
+    location: "The RAI, Amsterdam, Netherlands",
+    geography: "Europe",
+    vertical: "fintech",
+    sourceUrl: "https://europe.money2020.com/",
+    audienceSize: null,
+    audienceSizeSource: null,
+    demoScenarioId: "money20-eu-demo",
+    demoDateWarning:
+      "The fictional outreach pages use an illustrative 2–4 June scenario; review every illustrative date before real outreach.",
+    claims: {
+      vertical_fit: { claim: "The organizer describes a fintech audience spanning banks, payments, technology, startups, retail, policy, crypto, and cybersecurity." },
+      buyer_role_density: { claim: "The organizer states that one in three attendees are C-suite leaders." },
+      fx_relevance: { claim: "The official event page links the programme to payments and cross-border financial services." },
+      meeting_accessibility: { claim: "The organizer positions the three-day event around forming partnerships and closing deals." },
+      trip_efficiency: unknownTrip("The RAI in Amsterdam"),
+    },
+  }),
+  defineConference({
+    id: "money20-usa-2026",
+    name: "Money20/20 USA",
+    edition: "2026",
+    startDate: "2026-10-18",
+    endDate: "2026-10-21",
+    location: "The Venetian, Las Vegas, Nevada, USA",
+    geography: "North America",
+    vertical: "fintech",
+    sourceUrl: "https://us.money2020.com/",
+    audienceSize: 11000,
+    audienceSizeSource: "https://us.money2020.com/",
+    claims: {
+      vertical_fit: { claim: "The official page names banks, payments, fintech, retail, technology, and investment leaders as its audience." },
+      buyer_role_density: { claim: "The organizer reports 11,000+ senior attendees and one in three C-suite attendees." },
+      fx_relevance: { claim: "Payments and financial infrastructure are explicit official programme themes." },
+      meeting_accessibility: { claim: "The official page promotes its attendee list, networking formats, and deal-making opportunities." },
+      trip_efficiency: unknownTrip("The Venetian in Las Vegas"),
+    },
+  }),
+  defineConference({
+    id: "money20-middle-east-2026",
+    name: "Money20/20 Middle East",
+    edition: "2026",
+    startDate: "2026-09-14",
+    endDate: "2026-09-16",
+    location: "Riyadh, Saudi Arabia",
+    geography: "Middle East",
+    vertical: "fintech",
+    sourceUrl: "https://europe.money2020.com/pr-2026-03-06-26-money20-20-europes-policy20-summit",
+    audienceSize: null,
+    audienceSizeSource: null,
+    claims: {
+      vertical_fit: { claim: "Money20/20's official release identifies the series with banks, payments companies, venture firms, regulators, and media." },
+      buyer_role_density: { claim: "The official release describes the series as convening fintech leaders; no current-edition attendee total is asserted." },
+      fx_relevance: { claim: "The official release discusses cross-border payments and financial infrastructure as core Money20/20 topics." },
+      meeting_accessibility: { claim: "The organizer describes the series as a place to build partnerships and conduct business." },
+      trip_efficiency: unknownTrip("Riyadh"),
+    },
+  }),
+  defineConference({
+    id: "money20-asia-2027",
+    name: "Money20/20 Asia",
+    edition: "2027",
+    startDate: "2027-04-27",
+    endDate: "2027-04-29",
+    location: "Queen Sirikit National Convention Center, Bangkok, Thailand",
+    geography: "Asia Pacific",
+    vertical: "fintech",
+    sourceUrl: "https://asia.money2020.com/",
+    audienceSize: 5000,
+    audienceSizeSource: "https://asia.money2020.com/",
+    claims: {
+      vertical_fit: { claim: "The official page targets banks, payment innovators, digital-asset companies, startups, investors, and technology leaders." },
+      buyer_role_density: { claim: "The organizer advertises 5,000+ attendees and says one in three are C-suite." },
+      fx_relevance: { claim: "The official page explicitly highlights cross-border growth, payments, banking, and financial infrastructure." },
+      meeting_accessibility: { claim: "The organizer describes an AI-powered networking app, searchable attendee list, and in-app messaging." },
+      trip_efficiency: unknownTrip("Bangkok's QSNCC"),
+    },
+  }),
+  defineConference({
+    id: "singapore-fintech-festival-2026",
+    name: "Singapore FinTech Festival",
+    edition: "2026",
+    startDate: "2026-11-18",
+    endDate: "2026-11-20",
+    location: "Singapore EXPO, Singapore",
+    geography: "Asia Pacific",
+    vertical: "fintech",
+    sourceUrl: "https://www.fintechfestival.sg/",
+    audienceSize: null,
+    audienceSizeSource: null,
+    claims: {
+      vertical_fit: { claim: "The organizer calls SFF an annual gathering of policy, finance, and technology." },
+      buyer_role_density: { claim: "The official site targets financial institutions, technology providers, startups, investors, and ecosystem leaders; no total is stored." },
+      fx_relevance: { claim: "The official programme includes geoeconomic corridors, digital finance, payments, and financial-system infrastructure." },
+      meeting_accessibility: { claim: "The official FAQ says the event app supports attendee search and exhibitor discovery." },
+      trip_efficiency: unknownTrip("Singapore EXPO"),
+    },
+  }),
+  defineConference({
+    id: "sibos-2026",
+    name: "Sibos",
+    edition: "2026",
+    startDate: "2026-09-28",
+    endDate: "2026-10-01",
+    location: "Miami Beach Convention Center, Miami Beach, Florida, USA",
+    geography: "North America",
+    vertical: "fintech",
+    sourceUrl: "https://www.sibos.com/attend/faq",
+    audienceSize: null,
+    audienceSizeSource: null,
+    claims: {
+      vertical_fit: { claim: "The official programme covers payments, securities, trade, digital assets, regulation, and resilience." },
+      buyer_role_density: { claim: "The organizer describes senior leaders, policymakers, technology experts, and innovators; no 2026 attendee total is stored." },
+      fx_relevance: { claim: "The official 2026 programme explicitly includes payments, securities, FX, and trade." },
+      meeting_accessibility: { claim: "The official participant tools include a directory, chat service, website, and mobile application." },
+      trip_efficiency: unknownTrip("Miami Beach Convention Center"),
+    },
+  }),
+  defineConference({
+    id: "eurofinance-2026",
+    name: "EuroFinance International Treasury Management",
+    edition: "2026",
+    startDate: "2026-09-16",
+    endDate: "2026-09-18",
+    location: "Barcelona International Convention Centre, Barcelona, Spain",
+    geography: "Europe",
+    vertical: "treasury",
+    sourceUrl: "https://www.eurofinance.com/international-treasury-event/faq/",
+    audienceSize: null,
+    audienceSizeSource: null,
+    claims: {
+      vertical_fit: { claim: "The official event is dedicated to corporate treasury and finance professionals." },
+      buyer_role_density: { claim: "The organizer identifies corporate treasurers, CFOs, finance directors, banks, and treasury technology providers." },
+      fx_relevance: { claim: "The official agenda includes managing corporate FX risk with automation and AI." },
+      meeting_accessibility: { claim: "The official networking app exposes the attendee list and supports scheduled meetings." },
+      trip_efficiency: unknownTrip("Barcelona's CCIB"),
+    },
+  }),
+  defineConference({
+    id: "seamless-middle-east-2026",
+    name: "Seamless Fintech Middle East",
+    edition: "2026",
+    startDate: "2026-09-22",
+    endDate: "2026-09-24",
+    location: "Dubai World Trade Centre, Dubai, United Arab Emirates",
+    geography: "Middle East",
+    vertical: "fintech",
+    sourceUrl: "https://www.terrapinn.com/exhibition/seamless-middle-east-fintech/index.stm",
+    audienceSize: 20000,
+    audienceSizeSource: "https://www.terrapinn.com/exhibition/seamless-middle-east-fintech/index.stm",
+    claims: {
+      vertical_fit: { claim: "The official page focuses on fintech and payments across technology, government, institutions, investors, and media." },
+      buyer_role_density: { claim: "The organizer publishes 20,000 attendees, 800 speakers, and 750 exhibitors." },
+      fx_relevance: { claim: "Payments, remittance, banks, and financial institutions are explicit official audience themes." },
+      meeting_accessibility: { claim: "The official FAQ offers attendee viewing and meeting booking through its premium networking app." },
+      trip_efficiency: unknownTrip("Dubai World Trade Centre"),
+    },
+  }),
+  defineConference({
+    id: "itb-berlin-2027",
+    name: "ITB Berlin",
+    edition: "2027",
+    startDate: "2027-03-16",
+    endDate: "2027-03-18",
+    location: "Berlin Exhibition Grounds, Berlin, Germany",
+    geography: "Europe",
+    vertical: "travel",
+    sourceUrl: "https://www.itb.com/en",
+    audienceSize: null,
+    audienceSizeSource: null,
+    claims: {
+      vertical_fit: { claim: "The official page positions ITB as a global travel trade show covering travel technology and the tourism value chain." },
+      buyer_role_density: { claim: "The organizer identifies the event as a B2B meeting point; no 2027 attendee total is stored." },
+      fx_relevance: { claim: "Travel and travel technology are verified; specific current-edition FX content is not yet asserted.", tag: "unknown" },
+      meeting_accessibility: { claim: "The official visitor tools describe networking, appointments, exhibitor discovery, and matching." },
+      trip_efficiency: unknownTrip("Berlin Exhibition Grounds"),
+    },
+  }),
+  defineConference({
+    id: "saastr-ai-annual-2027",
+    name: "SaaStr AI Annual",
+    edition: "2027",
+    startDate: "2027-05-11",
+    endDate: "2027-05-12",
+    location: "San Mateo County Event Center, San Mateo, California, USA",
+    geography: "North America",
+    vertical: "saas",
+    sourceUrl: "https://www.saastrannual.com/",
+    audienceSize: 12500,
+    audienceSizeSource: "https://www.saastrannual.com/",
+    claims: {
+      vertical_fit: { claim: "The official event targets B2B SaaS and AI founders, operators, executives, and investors." },
+      buyer_role_density: { claim: "The organizer advertises 12,500+ founders, executives, revenue leaders, and investors." },
+      fx_relevance: { claim: "The official page does not assert a dedicated FX or cross-border treasury programme.", tag: "unknown" },
+      meeting_accessibility: { claim: "The official page advertises structured one-to-one meetings, roundtables, and executive summits." },
+      trip_efficiency: unknownTrip("San Mateo County Event Center"),
+    },
+  }),
+  defineConference({
+    id: "business-travel-show-europe-2027",
+    name: "Business Travel Show Europe",
+    edition: "2027",
+    startDate: "2027-06-23",
+    endDate: "2027-06-24",
+    location: "ExCeL London, London, United Kingdom",
+    geography: "Europe",
+    vertical: "travel",
+    sourceUrl: "https://www.businesstravelshoweurope.com/",
+    audienceSize: null,
+    audienceSizeSource: null,
+    claims: {
+      vertical_fit: { claim: "The official show is for corporate travel managers, meeting planners, and procurement professionals." },
+      buyer_role_density: { claim: "The official hosted-buyer criteria require travel-budget or policy decision authority; no total is stored." },
+      fx_relevance: { claim: "Corporate travel is verified; a dedicated 2027 FX programme is not yet asserted.", tag: "unknown" },
+      meeting_accessibility: { claim: "The official hosted-buyer programme uses pre-scheduled appointments and networking events." },
+      trip_efficiency: { claim: "The event shares ExCeL London and dates with TravelTech Show 2027, creating a verified same-site cluster." },
+    },
+  }),
+  defineConference({
+    id: "traveltech-show-2027",
+    name: "TravelTech Show",
+    edition: "2027",
+    startDate: "2027-06-23",
+    endDate: "2027-06-24",
+    location: "ExCeL London, London, United Kingdom",
+    geography: "Europe",
+    vertical: "travel",
+    sourceUrl: "https://traveltech-show.com/",
+    audienceSize: null,
+    audienceSizeSource: null,
+    claims: {
+      vertical_fit: { claim: "The official show describes a travel-technology marketplace for TMCs, tour operators, OTAs, airlines, and hotels." },
+      buyer_role_density: { claim: "The organizer states that 700+ senior travel-technology buyers attend; this buyer count is not stored as total audience." },
+      fx_relevance: { claim: "The official sectors include payments, booking, accounting, and travel software; specific FX programming is not asserted.", tag: "cited" },
+      meeting_accessibility: { claim: "The organizer describes a pre-arranged one-to-one meeting platform." },
+      trip_efficiency: { claim: "The event shares ExCeL London and dates with Business Travel Show Europe 2027." },
+    },
+  }),
+];
+
+export function audienceSizeLabel(conference: ConferenceRecord): string {
+  return conference.audienceSize === null
+    ? "Unknown"
+    : new Intl.NumberFormat("en-US").format(conference.audienceSize);
+}
