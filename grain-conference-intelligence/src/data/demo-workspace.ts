@@ -121,5 +121,6 @@ export function createDemoWorkspace(): WorkspaceStateV1 {
     }),
     matchReviews: [],
     captureDrafts: {},
+    copilotBriefs: {},
   });
 }

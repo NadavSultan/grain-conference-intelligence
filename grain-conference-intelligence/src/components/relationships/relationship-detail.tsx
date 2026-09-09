@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { CONFERENCES } from "@/data/conferences";
+import { RelationshipCopilot } from "@/components/copilot/relationship-copilot";
 import { deriveRelationshipEligibility } from "@/features/relationships/eligibility";
 import { useWorkspace } from "@/workspace/provider";
 import type { TimelineKind } from "@/domain/types";
@@ -114,6 +115,11 @@ export function RelationshipDetail({ contactId }: { contactId: string }) {
           );
         })}
       </ul>
+      <RelationshipCopilot
+        personId={contactId}
+        companyId={contact.company.toLowerCase().replace(/[^a-z0-9]+/g, "-")}
+        conferenceId={entries[0]?.conferenceId}
+      />
     </section>
   );
 }

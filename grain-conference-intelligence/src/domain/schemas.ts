@@ -163,6 +163,23 @@ export const conferenceScoreResultSchema = z.object({
   tier: z.enum(["A", "B", "C"]),
 });
 
+export const relationshipBriefSchema = z.object({
+  state: z.enum(["warming", "stalled", "unclear"]),
+  confidence: z.number().min(0).max(1),
+  summary: z.string().min(1),
+  evidenceEncounterIds: z.array(z.string()),
+  evidenceSignalIds: z.array(z.string()),
+  suggestedAngle: z.object({
+    fact: z.string().min(1),
+    evidenceIds: z.array(z.string()),
+    relevanceInference: z.string().min(1),
+  }),
+  counterEvidence: z.array(z.string()),
+  recommendedAction: z.string().min(1),
+  followUpDraft: z.object({ subject: z.string(), body: z.string() }).nullable(),
+  linkedInDraft: z.string().nullable(),
+});
+
 export const conferencePlanSchema = z.object({
   decision: z.enum(["attend", "watch", "skip", "undecided"]),
   owner: z.string().min(1).nullable(),
@@ -241,4 +258,17 @@ export const workspaceStateV1Schema = z.object({
       plannedMeetingId: z.string().optional(),
     }),
   ),
+  copilotBriefs: z
+    .record(
+      z.string(),
+      z.object({
+        personId: z.string().min(1),
+        mode: z.enum(["live", "fallback", "cached"]),
+        provider: z.string(),
+        model: z.string(),
+        generatedAt: z.string().min(1),
+        brief: relationshipBriefSchema,
+      }),
+    )
+    .default({}),
 });

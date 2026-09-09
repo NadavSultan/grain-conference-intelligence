@@ -108,6 +108,11 @@ export function workspaceReducer(
         ...state,
         captureDrafts: { ...state.captureDrafts, [action.id]: action.draft },
       };
+    case "copilot/store":
+      return {
+        ...state,
+        copilotBriefs: { ...state.copilotBriefs, [action.personId]: action.stored },
+      };
     case "capture/save": {
       if (
         action.plannedMeetingId &&

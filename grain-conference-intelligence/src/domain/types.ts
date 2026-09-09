@@ -191,6 +191,32 @@ export interface MatchReview {
   status: "pending" | "accepted" | "rejected";
 }
 
+export interface RelationshipBrief {
+  state: "warming" | "stalled" | "unclear";
+  confidence: number;
+  summary: string;
+  evidenceEncounterIds: string[];
+  evidenceSignalIds: string[];
+  suggestedAngle: {
+    fact: string;
+    evidenceIds: string[];
+    relevanceInference: string;
+  };
+  counterEvidence: string[];
+  recommendedAction: string;
+  followUpDraft: { subject: string; body: string } | null;
+  linkedInDraft: string | null;
+}
+
+export interface StoredCopilotBrief {
+  personId: string;
+  mode: "live" | "fallback" | "cached";
+  provider: string;
+  model: string;
+  generatedAt: string;
+  brief: RelationshipBrief;
+}
+
 export interface CaptureDraft {
   name: string;
   company: string;
@@ -227,6 +253,7 @@ export interface WorkspaceStateV1 {
   contacts: ContactRecord[];
   matchReviews: MatchReview[];
   captureDrafts: Record<string, CaptureDraft>;
+  copilotBriefs: Record<string, StoredCopilotBrief>;
 }
 
 export type WorkspaceAction =
@@ -285,5 +312,6 @@ export type WorkspaceAction =
   | { type: "match/accept"; reviewId: string; contactId: string }
   | { type: "match/reject"; reviewId: string }
   | { type: "capture/draft"; id: string; draft: CaptureDraft }
+  | { type: "copilot/store"; personId: string; stored: StoredCopilotBrief }
   | { type: "workspace/replace"; state: WorkspaceStateV1 }
   | { type: "workspace/reset"; state: WorkspaceStateV1 };

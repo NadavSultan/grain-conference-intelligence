@@ -7,6 +7,7 @@ import { ALL_EVIDENCE, PREP_SNAPSHOTS, PROFILES, type FullProfileId } from "@/da
 import type { PrepStatus } from "@/domain/types";
 import { snapshotForConference } from "@/features/conferences/scoring";
 import { canProspect, linkedInHref, mailtoHref, slackHref } from "@/features/prep/actions";
+import { RelationshipCopilot } from "@/components/copilot/relationship-copilot";
 import { useWorkspace } from "@/workspace/provider";
 
 const STATUSES: PrepStatus[] = [
@@ -343,6 +344,11 @@ export function OutreachProfile({
         </div>
         <p className="provenance">No button sends email, LinkedIn, Slack, or a live HubSpot write.</p>
       </section>
+      <RelationshipCopilot
+        personId={personId}
+        companyId={snapshotRecord?.companyId ?? "payloom"}
+        conferenceId={conferenceId}
+      />
     </article>
   );
 }
