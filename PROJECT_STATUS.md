@@ -7,6 +7,7 @@
 - Baseline commit: `e43f1c7 docs: establish grain assignment baseline`
 - Task 1 commit: `58df089 chore: scaffold branded conference intelligence workspace`
 - Task 2 commit: `e774db7 feat: add sourced conference and labelled prep fixtures`
+- Checkpoint 1 remediation commit: `6a10960 fix: remediate checkpoint 1 evidence fixtures`
 - Vercel eventual Root Directory: `grain-conference-intelligence` (recorded for future project configuration; no Vercel project was linked and no deployment was performed).
 - Next authorized work: none pending independent review.
 
@@ -24,8 +25,13 @@ All commands were run from `grain-conference-intelligence` with pnpm 11.19.0.
 | `pnpm typecheck` after Task 2 | 0 | TypeScript emitted no diagnostics |
 | `pnpm lint` after Task 2 | 0 | ESLint emitted no diagnostics |
 | `pnpm build` after Task 2 | 0 | Next.js 16.3.4 production build compiled, typechecked, and generated 4 static pages |
+| `pnpm vitest run src/data` after remediation | 0 | 1 file, 22 tests passed, 0 skipped |
+| `pnpm test:run` after remediation | 0 | 2 files, 29 tests passed, 0 skipped |
+| `pnpm typecheck` after remediation | 0 | TypeScript emitted no diagnostics |
+| `pnpm lint` after remediation | 0 | ESLint emitted no diagnostics |
+| `pnpm build` after remediation | 0 | Next.js 16.3.4 compiled and generated 4 static pages |
 
-Zero-skip status: **PASS — 24 passed, 0 skipped in the complete test suite.**
+Zero-skip status: **PASS — 29 passed, 0 skipped in the complete test suite.**
 
 The first sandboxed build attempt exited 1 because `next/font/google` could not reach Google Fonts. The same command was rerun with network access and exited 0. This was an environment access failure, not a code change or waived gate.
 
@@ -75,9 +81,9 @@ The first sandboxed build attempt exited 1 because `next/font/google` could not 
 
 ## Known limitations and unresolved data questions
 
-- Eight conference audience totals remain explicitly `null`/Unknown because an official total supporting the stored edition was not available on the selected official page. Buyer counts are not misrepresented as total attendance.
+- Seven conference audience totals remain explicitly `null`/Unknown because an official total supporting the stored edition was not available on the selected official page. Buyer and historical-edition counts are not misrepresented as current total attendance.
 - Conference facts are a source-ledger snapshot verified on 2026-09-09 and must be rechecked before real planning because future event details can change.
-- The official Money20/20 release verifies the 2026 Middle East dates and Riyadh, but this checkpoint does not assert a more specific venue or an audience total.
+- Money20/20 Middle East now uses its official 2026 organizer pages for the Malham venue and 38,000+ audience claim; SaaStr's unsupported 12,500 value is now Unknown.
 - The four outreach profiles and compact edge cases are fictional demo data. Their local exhibits and records are labelled; the illustrative 2–4 June schedule is intentionally separate from verified Money20/20 Europe 2027 dates.
 - Live research, conference pages, Prep UI, mobile capture, Relationship Copilot, CRM implementation, deployment, and all Checkpoint 2 work remain unimplemented by design.
 - Vercel Root Directory is documented as `grain-conference-intelligence`; applying it requires a future linked Vercel project and was not authorized in this checkpoint.

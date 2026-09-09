@@ -16,17 +16,17 @@ All records were verified on 2026-09-09 from organizer-controlled pages. Audienc
 
 | Conference | Edition and verified schedule | Location | Audience | Official source |
 | --- | --- | --- | ---: | --- |
-| Money20/20 Europe | 8–10 Jun 2027 | The RAI, Amsterdam | Unknown | https://europe.money2020.com/ |
-| Money20/20 USA | 18–21 Oct 2026 | The Venetian, Las Vegas | 11,000 | https://us.money2020.com/ |
-| Money20/20 Middle East | 14–16 Sep 2026 | Riyadh | Unknown | https://europe.money2020.com/pr-2026-03-06-26-money20-20-europes-policy20-summit |
-| Money20/20 Asia | 27–29 Apr 2027 | QSNCC, Bangkok | 5,000 | https://asia.money2020.com/ |
+| Money20/20 Europe | 8–10 Jun 2027 | The RAI, Amsterdam | 7,400 | https://europe.money2020.com/attend |
+| Money20/20 USA | 18–21 Oct 2026 | The Venetian, Las Vegas | 11,000 | https://us.money2020.com/attend/faq |
+| Money20/20 Middle East | 14–16 Sep 2026 | Riyadh Exhibition & Convention Center, Malham | 38,000 | https://money2020middleeast.com/about-us/key-information |
+| Money20/20 Asia | 27–29 Apr 2027 | QSNCC, Bangkok | 5,000 | https://asia.money2020.com/attend |
 | Singapore FinTech Festival | 18–20 Nov 2026 | Singapore EXPO | Unknown | https://www.fintechfestival.sg/ |
 | Sibos | 28 Sep–1 Oct 2026 | Miami Beach Convention Center | Unknown | https://www.sibos.com/attend/faq |
 | EuroFinance International Treasury Management | 16–18 Sep 2026 | CCIB, Barcelona | Unknown | https://www.eurofinance.com/international-treasury-event/faq/ |
-| Seamless Fintech Middle East | 22–24 Sep 2026 | Dubai World Trade Centre | 20,000 | https://www.terrapinn.com/exhibition/seamless-middle-east-fintech/index.stm |
+| Seamless Fintech Middle East | 22–24 Sep 2026 | Dubai World Trade Centre | 20,000 | https://www.terrapinn.com/exhibition/seamless-middle-east-fintech/ |
 | ITB Berlin | 16–18 Mar 2027 | Berlin Exhibition Grounds | Unknown | https://www.itb.com/en |
-| SaaStr AI Annual | 11–12 May 2027 | San Mateo County Event Center | 12,500 | https://www.saastrannual.com/ |
-| Business Travel Show Europe | 23–24 Jun 2027 | ExCeL London | Unknown | https://www.businesstravelshoweurope.com/ |
+| SaaStr AI Annual | 11–12 May 2027 | San Francisco Bay Area | Unknown | https://www.saastrannual.com/buy-tickets-2026 |
+| Business Travel Show Europe | 23–24 Jun 2027 | ExCeL London | Unknown | https://www.businesstravelshoweurope.com/hosted/hosted-buyer-faqs |
 | TravelTech Show | 23–24 Jun 2027 | ExCeL London | Unknown | https://traveltech-show.com/ |
 
 The Money20/20 Europe record separately identifies the fictional `money20-eu-demo` scheduling frame and warns that its supplied 2–4 June references are illustrative, not the verified 2027 schedule.
@@ -35,19 +35,20 @@ The Money20/20 Europe record separately identifies the fictional `money20-eu-dem
 
 - Full pages: Sam Jones / Acme Payments; David Cohen / Northwind Travel Group; Priya Natarajan / Lumio Marketplace; Marcus Oyelaran / Payloom.
 - Cached events: `money20-eu-demo` and `eurofinance-2026`.
-- Money snapshots: `money20-eu-demo-snapshot-1` and `money20-eu-demo-snapshot-2`; repeated evidence IDs are reused.
-- Local exhibits: `sam.html`, `david.html`, `priya.html`, `marcus.html`, and `edge-fixtures.html`; every page begins with the required non-live fictional-evidence warning and includes dated fixture content.
+- Money snapshots: `money20-eu-demo-snapshot-1` and `money20-eu-demo-snapshot-2`; stable record IDs are retained while Priya changes from likely to confirmed, Marcus becomes removed/cancelled, and one compact company-only record is added.
+- Local exhibits: `sam.html`, `david.html`, `priya.html`, `marcus.html`, and `edge-fixtures.html`; every page begins with the required non-live fictional-evidence warning, and every evidence URL resolves to an actual HTML anchor.
+- Claim inventory: every displayed fact, signal, quote, evidence gap, relationship statement, and factual draft premise for Sam, David, Priya, and Marcus has stable evidence or timeline references owned by the same person and company.
 - Edge states: open deal, probable returner, company-only signal, cancelled speaker, unknown CRM, namesake/domain ambiguity, job change, and a stalled relationship with three actual encounters spanning 203 days and no progression.
 - Workspace history: Marcus's actual encounter is separate from outreach, reply, research observation, and planned-meeting records, so the planned second meeting does not inflate encounter count.
 
 ## Test evidence
 
-Test-first RED evidence was observed before implementation: the initial reducer test failed on missing workspace modules; the initial seed test failed on missing seed modules; later integrity tests failed on unresolved edge evidence and incomplete typed relationship history before those gaps were implemented.
+Remediation test-first RED evidence: `pnpm vitest run src/data` exited 1 with 4 failures and 18 passes before implementation. The failures identified the incorrect source ledger/component URL matrix, missing profile claim inventory, and absent added/changed/cancelled snapshot transitions. After conference remediation, the same focused suite had 2 failures and 20 passes, isolated to missing local anchors and snapshot transitions.
 
 Final evidence:
 
-- `pnpm vitest run src/data/seeds.test.ts` — exit 0; 1 file, 17 passed, 0 skipped.
-- `pnpm test:run` — exit 0; 2 files, 24 passed, 0 skipped.
+- `pnpm vitest run src/data` — exit 0; 1 file, 22 passed, 0 skipped.
+- `pnpm test:run` — exit 0; 2 files, 29 passed, 0 skipped.
 - `pnpm typecheck` — exit 0; no diagnostics.
 - `pnpm lint` — exit 0; no diagnostics.
 
@@ -58,7 +59,8 @@ Final evidence:
 ## Git status
 
 - Branch: `feat/checkpoint-1-foundation`
-- Baseline: `e43f1c7`
+- Remediation starting commit: `1c6985bf0a6b4cbf570ea8e938dc51154c64c87a`
+- Remediation implementation commit: `6a10960`
 - Task 1: `58df089`
 - Task 2: `e774db7`
 - Governing Markdown files remain byte-for-byte unchanged relative to the baseline commit.
@@ -73,7 +75,7 @@ Final evidence:
 ## Remaining risks
 
 - Future conference facts and official pages may change after the 2026-09-09 verification snapshot.
-- Unknown audience totals and unknown/low-confidence score components must remain visibly unknown in later UI work.
+- Unsupported audience totals and score components remain `null`/Unknown; in particular, SaaStr's unsupported 12,500 value was removed rather than reconciled to the organizer's separate 10,000+ historical claim.
 - Local evidence exhibits prove fixture provenance and presentation boundaries, not real-world facts about the fictional people or companies.
 - The stored second research snapshot has no simulated-run time until a later authorized UI action replays it; the immutable research timestamp and mutable simulation-run timestamp are intentionally separate.
 - No live AI or CRM behavior is claimed at this checkpoint. Those later requirements remain pending their authorized checkpoints.
