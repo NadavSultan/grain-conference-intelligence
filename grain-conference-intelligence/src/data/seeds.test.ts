@@ -8,12 +8,50 @@ import {
   EDGE_FIXTURES,
   FULL_PROFILE_IDS,
   PREP_SNAPSHOTS,
+  PROFILE_CLAIMS,
   PROFILES,
 } from "@/data/prep-snapshots";
 import { createDemoWorkspace } from "@/data/demo-workspace";
 import { workspaceStateV1Schema } from "@/domain/schemas";
 
 describe("conference source ledger", () => {
+  it("matches the hand-verified organizer ledger for schedule, venue, and audience", () => {
+    const expected = {
+      "money20-europe-2027": ["2027-06-08", "2027-06-10", "The RAI, Amsterdam, Netherlands", 7400, "https://europe.money2020.com/attend"],
+      "money20-usa-2026": ["2026-10-18", "2026-10-21", "The Venetian, Las Vegas, Nevada, USA", 11000, "https://us.money2020.com/attend/faq"],
+      "money20-middle-east-2026": ["2026-09-14", "2026-09-16", "Riyadh Exhibition & Convention Center, Malham, Saudi Arabia", 38000, "https://money2020middleeast.com/about-us/key-information"],
+      "money20-asia-2027": ["2027-04-27", "2027-04-29", "Queen Sirikit National Convention Center, Bangkok, Thailand", 5000, "https://asia.money2020.com/attend"],
+      "singapore-fintech-festival-2026": ["2026-11-18", "2026-11-20", "Singapore EXPO, Singapore", null, "https://www.fintechfestival.sg/"],
+      "sibos-2026": ["2026-09-28", "2026-10-01", "Miami Beach Convention Center, Miami Beach, Florida, USA", null, "https://www.sibos.com/attend/faq"],
+      "eurofinance-2026": ["2026-09-16", "2026-09-18", "Barcelona International Convention Centre, Barcelona, Spain", null, "https://www.eurofinance.com/international-treasury-event/faq/"],
+      "seamless-middle-east-2026": ["2026-09-22", "2026-09-24", "Dubai World Trade Centre, Dubai, United Arab Emirates", 20000, "https://www.terrapinn.com/exhibition/seamless-middle-east-fintech/"],
+      "itb-berlin-2027": ["2027-03-16", "2027-03-18", "Berlin Exhibition Grounds, Berlin, Germany", null, "https://www.itb.com/en"],
+      "saastr-ai-annual-2027": ["2027-05-11", "2027-05-12", "San Francisco Bay Area, USA", null, "https://www.saastrannual.com/buy-tickets-2026"],
+      "business-travel-show-europe-2027": ["2027-06-23", "2027-06-24", "ExCeL London, London, United Kingdom", null, "https://www.businesstravelshoweurope.com/hosted/hosted-buyer-faqs"],
+      "traveltech-show-2027": ["2027-06-23", "2027-06-24", "ExCeL London, London, United Kingdom", null, "https://traveltech-show.com/"],
+    } as const;
+
+    expect(Object.fromEntries(CONFERENCES.map((conference) => [conference.id, [conference.startDate, conference.endDate, conference.location, conference.audienceSize, conference.sourceUrl]]))).toEqual(expected);
+  });
+
+  it("binds each score component to its hand-checked supporting organizer page", () => {
+    const expectedSources: Record<string, Record<string, string>> = {
+      "money20-europe-2027": { vertical_fit: "https://europe.money2020.com/attend", buyer_role_density: "https://europe.money2020.com/attend", fx_relevance: "https://europe.money2020.com/", meeting_accessibility: "https://europe.money2020.com/attend", trip_efficiency: "https://europe.money2020.com/attend" },
+      "money20-usa-2026": { vertical_fit: "https://us.money2020.com/", buyer_role_density: "https://us.money2020.com/", fx_relevance: "https://us.money2020.com/", meeting_accessibility: "https://us.money2020.com/platinum-pass", trip_efficiency: "https://us.money2020.com/attend/faq" },
+      "money20-middle-east-2026": { vertical_fit: "https://money2020middleeast.com/about-us/key-information", buyer_role_density: "https://money2020middleeast.com/about-us/key-information", fx_relevance: "https://app.money2020middleeast.com/event/money20-20-middle-east-2026/planning/UGxhbm5pbmdfNDU2MTk5Mg%3D%3D", meeting_accessibility: "https://money2020middleeast.com/tickets-2026", trip_efficiency: "https://money2020middleeast.com/about-us/key-information" },
+      "money20-asia-2027": { vertical_fit: "https://asia.money2020.com/attend", buyer_role_density: "https://asia.money2020.com/attend", fx_relevance: "https://asia.money2020.com/attend", meeting_accessibility: "https://asia.money2020.com/attend", trip_efficiency: "https://asia.money2020.com/attend" },
+      "singapore-fintech-festival-2026": { vertical_fit: "https://www.fintechfestival.sg/", buyer_role_density: "https://www.fintechfestival.sg/join-sff2026", fx_relevance: "https://www.fintechfestival.sg/agenda?session=AGND577-one-world-many-rails-defining-the-next-chapter-of-money-movement", meeting_accessibility: "https://www.fintechfestival.sg/join-sff2026", trip_efficiency: "https://www.fintechfestival.sg/" },
+      "sibos-2026": { vertical_fit: "https://www.sibos.com/", buyer_role_density: "https://www.sibos.com/programme/conference-at-glance", fx_relevance: "https://www.sibos.com/programme/conference", meeting_accessibility: "https://www.sibos.com/", trip_efficiency: "https://www.sibos.com/attend/faq" },
+      "eurofinance-2026": { vertical_fit: "https://www.eurofinance.com/international-treasury-event/registration/", buyer_role_density: "https://www.eurofinance.com/international-treasury-event/faq/", fx_relevance: "https://www.eurofinance.com/international-treasury-event/treasury-exchange-roundtables/", meeting_accessibility: "https://www.eurofinance.com/international-treasury-event/networking-app/", trip_efficiency: "https://www.eurofinance.com/international-treasury-event/faq/" },
+      "seamless-middle-east-2026": { vertical_fit: "https://www.terrapinn.com/exhibition/seamless-middle-east-fintech/", buyer_role_density: "https://www.terrapinn.com/exhibition/seamless-middle-east-fintech/Event-Highlights.stm", fx_relevance: "https://www.terrapinn.com/exhibition/seamless-middle-east-fintech/Agenda.stm", meeting_accessibility: "https://www.terrapinn.com/exhibition/seamless-middle-east-fintech/frequently-asked-questions.stm", trip_efficiency: "https://www.terrapinn.com/exhibition/seamless-middle-east-fintech/" },
+      "itb-berlin-2027": { vertical_fit: "https://www.itb.com/en", buyer_role_density: "https://www.itb.com/en/ausstellen/exhibition-areas/travel-technology", fx_relevance: "https://www.itb.com/en/ausstellen/exhibition-areas/travel-technology", meeting_accessibility: "https://www.itb.com/en/itb-berlin-for-visitors/exhibiton-planning/itb-navigator", trip_efficiency: "https://www.itb.com/en" },
+      "saastr-ai-annual-2027": { vertical_fit: "https://www.saastrannual.com/buy-tickets-2026", buyer_role_density: "https://www.saastrannual.com/buy-tickets-2026", fx_relevance: "https://www.saastrannual.com/buy-tickets-2026", meeting_accessibility: "https://www.saastrannual.com/buy-tickets-2026", trip_efficiency: "https://www.saastrannual.com/buy-tickets-2026" },
+      "business-travel-show-europe-2027": { vertical_fit: "https://www.businesstravelshoweurope.com/", buyer_role_density: "https://www.businesstravelshoweurope.com/hosted/hosted-buyer-faqs", fx_relevance: "https://www.businesstravelshoweurope.com/", meeting_accessibility: "https://www.businesstravelshoweurope.com/hosted/hosted-buyer-faqs", trip_efficiency: "https://traveltech-show.com/visit/co-located-shows" },
+      "traveltech-show-2027": { vertical_fit: "https://traveltech-show.com/", buyer_role_density: "https://traveltech-show.com/exhibit", fx_relevance: "https://traveltech-show.com/about-us/our-story", meeting_accessibility: "https://traveltech-show.com/exhibit", trip_efficiency: "https://traveltech-show.com/exhibit" },
+    };
+
+    expect(Object.fromEntries(CONFERENCES.map((conference) => [conference.id, Object.fromEntries(conference.scoreEvidence.map((item) => [item.component, item.sourceUrl]))]))).toEqual(expectedSources);
+  });
   it("contains exactly 12 unique sourced conferences", () => {
     expect(CONFERENCES).toHaveLength(12);
     expect(new Set(CONFERENCES.map((conference) => conference.id)).size).toBe(12);
@@ -101,11 +139,71 @@ describe("trusted Prep fixtures", () => {
     expect(referencedIds.every((id) => evidenceIds.includes(id))).toBe(true);
   });
 
+  it("references every displayed profile claim with correctly owned evidence or timeline IDs", () => {
+    const workspace = createDemoWorkspace();
+    const evidenceById = new Map(ALL_EVIDENCE.map((item) => [item.id, item]));
+    const timelineById = new Map(workspace.timeline.map((item) => [item.id, item]));
+    const expectedCompanyIds = {
+      sam: "acme-payments",
+      david: "northwind-travel",
+      priya: "lumio-marketplace",
+      marcus: "payloom",
+    } as const;
+
+    for (const personId of FULL_PROFILE_IDS) {
+      const profile = PROFILES[personId];
+      const inventory = PROFILE_CLAIMS[personId];
+      const expectedPaths = [
+        "identity.name", "identity.title", "identity.company", "headline", "prepStatus",
+        "contact.linkedIn", profile.contact.email ? "contact.email" : "contact.emailGap",
+        ...profile.attendanceEvidence.map((_, index) => `attendanceEvidence.${index}`),
+        ...profile.whyThisPersonMatters.map((_, index) => `whyThisPersonMatters.${index}`),
+        ...profile.relationshipHistory.map((_, index) => `relationshipHistory.${index}`),
+        ...profile.recentSignals.map((_, index) => `recentSignals.${index}`),
+        "suggestedAngle",
+        ...(profile.coordinationStep ? ["coordinationStep"] : []),
+        ...(profile.relationshipRead.text ? ["relationshipRead.text"] : []),
+        ...profile.relationshipRead.counterEvidence.map((_, index) => `relationshipRead.counterEvidence.${index}`),
+        ...(profile.drafts.email ? ["drafts.email.body"] : []),
+        ...(profile.drafts.linkedIn ? ["drafts.linkedIn.body"] : []),
+        "nextAction",
+      ].sort();
+
+      expect(inventory.companyId).toBe(expectedCompanyIds[personId]);
+      expect(inventory.claims.map((claim) => claim.displayPath).sort()).toEqual(expectedPaths);
+      for (const claim of inventory.claims) {
+        expect(claim.evidenceIds.length + claim.timelineIds.length).toBeGreaterThan(0);
+        for (const evidenceId of claim.evidenceIds) {
+          const evidence = evidenceById.get(evidenceId);
+          expect(evidence, `${personId}:${claim.displayPath}:${evidenceId}`).toBeDefined();
+          expect(evidence?.personId).toBe(personId);
+          expect(evidence?.companyId).toBe(inventory.companyId);
+        }
+        for (const timelineId of claim.timelineIds) {
+          const timeline = timelineById.get(timelineId) as (typeof workspace.timeline)[number] & { companyId?: string };
+          expect(timeline, `${personId}:${claim.displayPath}:${timelineId}`).toBeDefined();
+          expect(timeline?.personId).toBe(personId);
+          expect(timeline?.companyId).toBe(inventory.companyId);
+        }
+      }
+    }
+  });
+
   it("labels every local exhibit and supplies dated fixture content", () => {
     for (const filename of ["sam.html", "david.html", "priya.html", "marcus.html", "edge-fixtures.html"]) {
       const exhibit = readFileSync(join(process.cwd(), "public", "evidence", filename), "utf8");
       expect(exhibit).toContain("Fictional demo evidence — not a live public source");
       expect(exhibit).toMatch(/Dated|Recorded|researched on/i);
+    }
+  });
+
+  it("resolves every local evidence URL to a real HTML anchor", () => {
+    for (const evidence of ALL_EVIDENCE) {
+      const url = new URL(evidence.exhibitUrl, "https://local.test");
+      const exhibit = readFileSync(join(process.cwd(), "public", url.pathname), "utf8");
+      const parsed = document.implementation.createHTMLDocument();
+      parsed.documentElement.innerHTML = exhibit;
+      expect(parsed.getElementById(url.hash.slice(1)), evidence.exhibitUrl).not.toBeNull();
     }
   });
 
@@ -187,6 +285,22 @@ describe("trusted Prep fixtures", () => {
     );
     expect(first.researchedAt).not.toBe(second.researchedAt);
     expect(second.simulatedAt).toBeNull();
+  });
+
+  it("models one added, one changed, and one cancelled Money20/20 transition", () => {
+    const [first, second] = PREP_SNAPSHOTS.filter((snapshot) => snapshot.conferenceId === "money20-eu-demo");
+    const firstById = new Map(first.records.map((record) => [record.id, record]));
+    const secondById = new Map(second.records.map((record) => [record.id, record]));
+
+    expect(second.records.filter((record) => !firstById.has(record.id)).map((record) => record.id)).toEqual(["money-company-only"]);
+    expect(firstById.get("money-priya")?.attendanceConfidence).toBe("likely");
+    expect(secondById.get("money-priya")?.attendanceConfidence).toBe("confirmed");
+    expect(secondById.get("money-priya")?.evidenceIds).toContain("priya-attendance-announcement");
+    expect(firstById.get("money-marcus")?.cancelled).toBe(false);
+    expect(secondById.get("money-marcus")).toMatchObject({ id: "money-marcus", cancelled: true, attendanceConfidence: "probable_returner" });
+    expect(secondById.get("money-marcus")?.evidenceIds).toEqual(expect.arrayContaining(["marcus-speaker-current", "marcus-speaker-removed", "marcus-speaker-prior"]));
+    expect(secondById.get("money-sam")).toEqual(firstById.get("money-sam"));
+    expect(secondById.get("money-david")).toEqual(firstById.get("money-david"));
   });
 });
 

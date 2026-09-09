@@ -34,6 +34,7 @@ export function createDemoWorkspace(): WorkspaceStateV1 {
       {
         id: "enc-marcus-money20-prior",
         personId: "marcus",
+        companyId: "payloom",
         conferenceId: "money20-eu-prior-demo",
         kind: "actual_encounter",
         occurredAt: "2025-06-03T14:00:00.000Z",
@@ -44,6 +45,7 @@ export function createDemoWorkspace(): WorkspaceStateV1 {
       {
         id: "outreach-marcus-one-pager",
         personId: "marcus",
+        companyId: "payloom",
         conferenceId: "money20-eu-prior-demo",
         kind: "outreach_sent",
         occurredAt: "2025-06-20T09:00:00.000Z",
@@ -54,6 +56,7 @@ export function createDemoWorkspace(): WorkspaceStateV1 {
       {
         id: "reply-marcus-new-year",
         personId: "marcus",
+        companyId: "payloom",
         conferenceId: "money20-eu-prior-demo",
         kind: "reply",
         occurredAt: "2025-06-20T15:00:00.000Z",
@@ -64,6 +67,7 @@ export function createDemoWorkspace(): WorkspaceStateV1 {
       {
         id: "outreach-marcus-second-follow-up",
         personId: "marcus",
+        companyId: "payloom",
         conferenceId: "money20-eu-prior-demo",
         kind: "outreach_sent",
         occurredAt: "2025-09-20T09:00:00.000Z",
@@ -74,6 +78,7 @@ export function createDemoWorkspace(): WorkspaceStateV1 {
       {
         id: "observation-marcus-linkedin-like",
         personId: "marcus",
+        companyId: "payloom",
         conferenceId: "money20-eu-demo",
         kind: "research_observation",
         occurredAt: "2025-12-20T09:00:00.000Z",

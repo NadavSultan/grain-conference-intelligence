@@ -76,6 +76,18 @@ export interface EvidenceRecord {
   origin: EvidenceOrigin;
 }
 
+export interface ProfileClaimReference {
+  displayPath: string;
+  evidenceIds: string[];
+  timelineIds: string[];
+}
+
+export interface ProfileClaimInventory {
+  personId: string;
+  companyId: string;
+  claims: ProfileClaimReference[];
+}
+
 export interface PrepSnapshotRecord {
   id: string;
   personId: string | null;
@@ -117,6 +129,7 @@ export interface PlannedMeeting {
 export interface TimelineEntry {
   id: string;
   personId: string;
+  companyId: string;
   conferenceId: string;
   kind: TimelineKind;
   occurredAt: string;

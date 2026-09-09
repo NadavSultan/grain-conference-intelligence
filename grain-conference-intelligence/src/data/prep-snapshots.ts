@@ -1,8 +1,9 @@
-import { evidenceRecordSchema, prepSnapshotSchema } from "@/domain/schemas";
+import { evidenceRecordSchema, prepSnapshotSchema, profileClaimInventorySchema } from "@/domain/schemas";
 import type {
   AttendanceConfidence,
   CrmState,
   EvidenceRecord,
+  ProfileClaimInventory,
   PrepSnapshot,
   TimelineEntry,
 } from "@/domain/types";
@@ -155,6 +156,10 @@ export const PROFILES: Record<FullProfileId, ProfileFixture> = {
       fictionalEvidence("sam-posting-pattern", "sam", "acme-payments", "Sam posts roughly monthly about settlement and treasury operations.", null, "Local research summary", "cited", null),
       fictionalEvidence("sam-email-pattern", "sam", "acme-payments", "The email follows a pattern seen on two fictional press contacts but is not verified.", null, "Local email-pattern exhibit", "inferred", null),
       fictionalEvidence("sam-provider-unknown", "sam", "acme-payments", "Current FX provider and hedging approach are unknown.", null, "Local evidence gap", "unknown", null),
+      fictionalEvidence("sam-company-facts", "sam", "acme-payments", "Acme is a fictional cross-border PSP with 280 staff and offices in London, Berlin, and Lisbon.", null, "Company profile exhibit", "verified", "2026-05-20"),
+      fictionalEvidence("sam-currency-expansion", "sam", "acme-payments", "Acme added six settlement currencies in two quarters.", null, "Product update exhibit", "verified", "2026-04-08"),
+      fictionalEvidence("sam-fx-job", "sam", "acme-payments", "Acme has a fictional FX and Liquidity Analyst opening.", null, "Careers exhibit", "verified", "2026-04-29"),
+      fictionalEvidence("sam-crm-gap", "sam", "acme-payments", "No matching person or company record exists in the fictional CRM fixture.", null, "CRM gap exhibit", "unknown", null),
     ],
   },
   david: {
@@ -211,6 +216,11 @@ export const PROFILES: Record<FullProfileId, ProfileFixture> = {
       fictionalEvidence("david-x-panel", "david", "northwind-travel", "David announced the fictional panel appearance.", "Speaking on the treasury panel at Money20/20 Thursday 2pm. Come say hi.", "X exhibit", "verified", "2026-05-11"),
       fictionalEvidence("david-fx-margin", "david", "northwind-travel", "The fictional annual report quantifies an FX margin impact.", "Adverse currency movements reduced gross margin by approximately 1.8 percentage points.", "Annual report exhibit", "verified", "2026-01-20"),
       fictionalEvidence("david-bank-inference", "david", "northwind-travel", "Use of a bank for hedging is inferred, not stated.", null, "Local inference exhibit", "inferred", null),
+      fictionalEvidence("david-profile-company", "david", "northwind-travel", "David is CFO and Northwind is a fictional travel wholesaler with the displayed markets and scale.", null, "Profile and company exhibit", "verified", "2026-05-20"),
+      fictionalEvidence("david-forwards", "david", "northwind-travel", "The fictional annual report states that forwards cover a portion of committed inventory.", "The Group uses forward contracts on a portion of its committed inventory purchases.", "Annual report exhibit", "verified", "2026-01-20"),
+      fictionalEvidence("david-crm-history", "david", "northwind-travel", "The fictional CRM fixture records ownership, dormant outreach, the bank note, and no open deal.", null, "CRM exhibit", "verified", null),
+      fictionalEvidence("david-thai-acquisition", "david", "northwind-travel", "Northwind's fictional acquisition added a THB cost base.", null, "Press exhibit", "verified", "2025-10-20"),
+      fictionalEvidence("david-provider-unknown", "david", "northwind-travel", "Northwind's current provider is unknown; bank usage remains inferred.", null, "Evidence gap", "unknown", null),
     ],
   },
   priya: {
@@ -262,6 +272,12 @@ export const PROFILES: Record<FullProfileId, ProfileFixture> = {
       fictionalEvidence("priya-role", "priya", "lumio-marketplace", "Priya is VP Payments; influence over FX is inferred.", null, "Profile exhibit", "inferred", "2026-05-20"),
       fictionalEvidence("priya-payouts", "priya", "lumio-marketplace", "Lumio announced fictional BRL and MXN local-currency payouts.", null, "Product blog exhibit", "verified", "2026-03-20"),
       fictionalEvidence("priya-fx-owner-unknown", "priya", "lumio-marketplace", "Which party carries the FX exposure is unknown.", null, "Local evidence gap", "unknown", null),
+      fictionalEvidence("priya-profile-company", "priya", "lumio-marketplace", "Priya is VP Payments and Lumio is the fictional marketplace described in the profile.", null, "Profile and company exhibit", "verified", "2026-05-20"),
+      fictionalEvidence("priya-speaker-sponsor-gap", "priya", "lumio-marketplace", "Neither Priya nor Lumio appears in the fictional speaker or sponsor fixtures.", null, "Event-list gap exhibit", "verified", "2026-05-20"),
+      fictionalEvidence("priya-provider-hedging-unknown", "priya", "lumio-marketplace", "Current provider and hedging approach are unknown.", null, "Evidence gap", "unknown", null),
+      fictionalEvidence("priya-crm-gap", "priya", "lumio-marketplace", "No prior relationship is present in the fictional CRM fixture.", null, "CRM gap exhibit", "unknown", null),
+      fictionalEvidence("priya-series-c", "priya", "lumio-marketplace", "Lumio's fictional Series C names LATAM and Southeast Asia expansion.", null, "Funding exhibit", "verified", "2025-12-20"),
+      fictionalEvidence("priya-attendance-announcement", "priya", "lumio-marketplace", "Priya later announced direct attendance at the fictional event.", "Amsterdam confirmed — see you at Money20/20.", "LinkedIn exhibit", "verified", "2026-05-26"),
     ],
   },
   marcus: {
@@ -327,9 +343,57 @@ export const PROFILES: Record<FullProfileId, ProfileFixture> = {
       fictionalEvidence("marcus-prior-encounter", "marcus", "payloom", "One actual prior encounter records Payloom's majors-versus-other-currencies approach.", "Hedges majors with bank, eats the rest. Evaluating two fintech providers. Said revisit Q1.", "Internal field-note exhibit", "verified", "2025-06-03"),
       fictionalEvidence("marcus-series-c", "marcus", "payloom", "Payloom's fictional Series C named 12 new corridors.", null, "Press release exhibit", "verified", "2025-10-20"),
       fictionalEvidence("marcus-warming-hypothesis", "marcus", "payloom", "Warming is only an illustrative hypothesis until concrete progression is captured.", null, "Local inference exhibit", "inferred", null),
+      fictionalEvidence("marcus-profile-company", "marcus", "payloom", "Marcus is Treasury Director and Payloom is the fictional payouts company described in the profile.", null, "Profile and company exhibit", "verified", "2026-05-20"),
+      fictionalEvidence("marcus-speaker-prior", "marcus", "payloom", "Marcus appeared on the prior fictional edition programme.", null, "Historical programme exhibit", "verified", "2025-05-20"),
+      fictionalEvidence("marcus-fx-job", "marcus", "payloom", "Payloom advertised a fictional emerging-markets FX treasury role.", null, "Careers exhibit", "verified", "2026-02-20"),
+      fictionalEvidence("marcus-speaker-removed", "marcus", "payloom", "The later fictional agenda removes Marcus and marks his appearance cancelled.", null, "Agenda change exhibit", "verified", "2026-05-27"),
     ],
   },
 };
+
+const COMPANY_IDS: Record<FullProfileId, string> = {
+  sam: "acme-payments",
+  david: "northwind-travel",
+  priya: "lumio-marketplace",
+  marcus: "payloom",
+};
+
+function displayedPaths(profile: ProfileFixture): string[] {
+  return [
+    "identity.name", "identity.title", "identity.company", "headline", "prepStatus",
+    "contact.linkedIn", profile.contact.email ? "contact.email" : "contact.emailGap",
+    ...profile.attendanceEvidence.map((_, index) => `attendanceEvidence.${index}`),
+    ...profile.whyThisPersonMatters.map((_, index) => `whyThisPersonMatters.${index}`),
+    ...profile.relationshipHistory.map((_, index) => `relationshipHistory.${index}`),
+    ...profile.recentSignals.map((_, index) => `recentSignals.${index}`),
+    "suggestedAngle",
+    ...(profile.coordinationStep ? ["coordinationStep"] : []),
+    ...(profile.relationshipRead.text ? ["relationshipRead.text"] : []),
+    ...profile.relationshipRead.counterEvidence.map((_, index) => `relationshipRead.counterEvidence.${index}`),
+    ...(profile.drafts.email ? ["drafts.email.body"] : []),
+    ...(profile.drafts.linkedIn ? ["drafts.linkedIn.body"] : []),
+    "nextAction",
+  ];
+}
+
+const TIMELINE_IDS = [
+  "enc-marcus-money20-prior", "outreach-marcus-one-pager", "reply-marcus-new-year",
+  "outreach-marcus-second-follow-up", "observation-marcus-linkedin-like",
+];
+
+export const PROFILE_CLAIMS = Object.fromEntries(FULL_PROFILE_IDS.map((personId) => {
+  const profile = PROFILES[personId];
+  const evidenceIds = profile.evidence.map((item) => item.id);
+  return [personId, profileClaimInventorySchema.parse({
+    personId,
+    companyId: COMPANY_IDS[personId],
+    claims: displayedPaths(profile).map((displayPath) => ({
+      displayPath,
+      evidenceIds,
+      timelineIds: personId === "marcus" && (displayPath.startsWith("relationship") || displayPath === "suggestedAngle" || displayPath.startsWith("drafts.")) ? TIMELINE_IDS : [],
+    })),
+  })];
+})) as Record<FullProfileId, ProfileClaimInventory>;
 
 export const EDGE_FIXTURES = {
   openDeal: {
@@ -395,9 +459,9 @@ export const EDGE_FIXTURES = {
     progression: "none" as const,
     origin: "fictional_demo" as const,
     timeline: [
-      { id: "edge-stalled-enc-1", personId: "edge-stalled-person", conferenceId: "edge-event-1", kind: "actual_encounter", occurredAt: "2025-01-10T10:00:00.000Z", summary: "Introductory conversation; no agreed next step.", company: "FictionalCo", role: "Finance Director" },
-      { id: "edge-stalled-enc-2", personId: "edge-stalled-person", conferenceId: "edge-event-2", kind: "actual_encounter", occurredAt: "2025-04-15T10:00:00.000Z", summary: "Brief catch-up; no reply or progression followed.", company: "FictionalCo", role: "Finance Director" },
-      { id: "edge-stalled-enc-3", personId: "edge-stalled-person", conferenceId: "edge-event-3", kind: "actual_encounter", occurredAt: "2025-08-01T10:00:00.000Z", summary: "Third conversation; no reciprocal next step.", company: "FictionalCo", role: "Finance Director" },
+      { id: "edge-stalled-enc-1", personId: "edge-stalled-person", companyId: "fictional-co", conferenceId: "edge-event-1", kind: "actual_encounter", occurredAt: "2025-01-10T10:00:00.000Z", summary: "Introductory conversation; no agreed next step.", company: "FictionalCo", role: "Finance Director" },
+      { id: "edge-stalled-enc-2", personId: "edge-stalled-person", companyId: "fictional-co", conferenceId: "edge-event-2", kind: "actual_encounter", occurredAt: "2025-04-15T10:00:00.000Z", summary: "Brief catch-up; no reply or progression followed.", company: "FictionalCo", role: "Finance Director" },
+      { id: "edge-stalled-enc-3", personId: "edge-stalled-person", companyId: "fictional-co", conferenceId: "edge-event-3", kind: "actual_encounter", occurredAt: "2025-08-01T10:00:00.000Z", summary: "Third conversation; no reciprocal next step.", company: "FictionalCo", role: "Finance Director" },
     ] satisfies TimelineEntry[],
   },
 };
@@ -433,8 +497,11 @@ const moneySnapshot2 = prepSnapshotSchema.parse({
   researchedAt: "2026-05-27T08:40:00.000Z",
   simulatedAt: null,
   records: [
-    ...moneySnapshot1.records,
-    { id: "money-cancelled", personId: "edge-cancelled", companyId: "fictional-cancelled-co", attendanceConfidence: "unknown", companyTier: "B", roleFit: "influencer", crmState: "unknown", prepStatus: "not_now", evidenceIds: ["edge-cancelled-removed"], currentEdition: true, cancelled: true },
+    moneySnapshot1.records[0],
+    moneySnapshot1.records[1],
+    { ...moneySnapshot1.records[2], attendanceConfidence: "confirmed", evidenceIds: ["priya-dinner-rsvp", "priya-attendance-announcement"] },
+    { ...moneySnapshot1.records[3], attendanceConfidence: "probable_returner", prepStatus: "not_now", evidenceIds: ["marcus-speaker-current", "marcus-speaker-removed", "marcus-speaker-prior"], currentEdition: false, cancelled: true },
+    { id: "money-company-only", personId: null, companyId: "meridian-remit", attendanceConfidence: "likely", companyTier: "A", roleFit: "unknown", crmState: "not_present", prepStatus: "to_contact", evidenceIds: ["edge-company-only-evidence"], currentEdition: true, cancelled: false },
   ],
 });
 

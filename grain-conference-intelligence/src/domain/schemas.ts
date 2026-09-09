@@ -60,6 +60,18 @@ export const evidenceRecordSchema = z.object({
   origin: evidenceOriginSchema,
 });
 
+export const profileClaimInventorySchema = z.object({
+  personId: z.string().min(1),
+  companyId: z.string().min(1),
+  claims: z.array(z.object({
+    displayPath: z.string().min(1),
+    evidenceIds: z.array(z.string().min(1)),
+    timelineIds: z.array(z.string().min(1)),
+  }).refine((claim) => claim.evidenceIds.length + claim.timelineIds.length > 0, {
+    message: "Every displayed claim needs evidence or timeline provenance",
+  })).min(1),
+});
+
 export const prepSnapshotSchema = z.object({
   id: z.string().min(1),
   conferenceId: z.string().min(1),
@@ -103,6 +115,7 @@ export const prepSnapshotSchema = z.object({
 export const timelineEntrySchema = z.object({
   id: z.string().min(1),
   personId: z.string().min(1),
+  companyId: z.string().min(1),
   conferenceId: z.string().min(1),
   kind: z.enum([
     "research_observation",
