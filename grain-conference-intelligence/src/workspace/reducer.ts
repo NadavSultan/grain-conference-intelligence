@@ -58,6 +58,50 @@ export function workspaceReducer(
         ...state,
         scoreSnapshots: appendScoreSnapshot(state.scoreSnapshots, action.score),
       };
+    case "prep/set-status": {
+      const key = `${action.conferenceId}:${action.personId}`;
+      return {
+        ...state,
+        prepStatuses: { ...state.prepStatuses, [key]: action.status },
+      };
+    }
+    case "prep/acknowledge-coordination": {
+      const key = `${action.conferenceId}:${action.personId}`;
+      return {
+        ...state,
+        coordinationAcknowledgements: {
+          ...state.coordinationAcknowledgements,
+          [key]: action.acknowledgedAt,
+        },
+      };
+    }
+    case "prep/activate-snapshot": {
+      if (state.activeSnapshotIds[action.conferenceId] === action.snapshotId) {
+        return state;
+      }
+      return {
+        ...state,
+        activeSnapshotIds: {
+          ...state.activeSnapshotIds,
+          [action.conferenceId]: action.snapshotId,
+        },
+        simulatedResearchRuns: {
+          ...state.simulatedResearchRuns,
+          [action.conferenceId]: action.simulatedAt,
+        },
+      };
+    }
+    case "draft/update": {
+      const current = state.outreachDrafts[action.key] ?? {};
+      const next =
+        action.channel === "email"
+          ? { ...current, email: { subject: action.subject, body: action.body } }
+          : { ...current, linkedin: { body: action.body } };
+      return {
+        ...state,
+        outreachDrafts: { ...state.outreachDrafts, [action.key]: next },
+      };
+    }
     case "workspace/replace":
     case "workspace/reset":
       return action.state;

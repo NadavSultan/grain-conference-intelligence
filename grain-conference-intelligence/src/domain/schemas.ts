@@ -198,4 +198,11 @@ export const workspaceStateV1Schema = z.object({
   simulatedResearchRuns: z.record(z.string(), z.string()),
   conferencePlans: z.record(z.string(), conferencePlanSchema),
   scoreSnapshots: z.array(conferenceScoreResultSchema),
+  outreachDrafts: z.record(
+    z.string(),
+    z.object({
+      email: z.object({ subject: z.string().nullable().optional(), body: z.string() }).optional(),
+      linkedin: z.object({ body: z.string() }).optional(),
+    }),
+  ),
 });

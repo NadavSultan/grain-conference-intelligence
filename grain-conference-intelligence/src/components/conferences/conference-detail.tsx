@@ -5,8 +5,10 @@ import { useSearchParams } from "next/navigation";
 
 import { PlanControls } from "@/components/conferences/plan-controls";
 import { ScorePanel, useRecordOriginalScore } from "@/components/conferences/score-panel";
+import { PrepList } from "@/components/prep/prep-list";
+import { ResearchStatus } from "@/components/prep/research-status";
 import { audienceSizeLabel, CONFERENCES } from "@/data/conferences";
-import { PREP_SNAPSHOTS, PROFILES, type FullProfileId } from "@/data/prep-snapshots";
+import { PREP_SNAPSHOTS } from "@/data/prep-snapshots";
 import { getConferencePlan } from "@/features/conferences/planning";
 import {
   calculateConferenceScore,
@@ -30,22 +32,6 @@ export function ConferenceDetail({ conferenceId }: { conferenceId: string }) {
   const original = originalScoreFor(state.scoreSnapshots, conferenceId);
 
   useRecordOriginalScore(conference ? score : null);
-
-  const namedPeople = (snapshot?.records ?? [])
-    .filter((record) => record.personId)
-    .map((record) => {
-      const profile =
-        record.personId && record.personId in PROFILES
-          ? PROFILES[record.personId as FullProfileId]
-          : null;
-      return {
-        id: record.id,
-        personId: record.personId as string,
-        name: profile?.name ?? record.personId,
-        title: profile?.title ?? record.roleFit,
-        company: profile?.company ?? record.companyId,
-      };
-    });
 
   if (!conference || !score) {
     return (
@@ -114,39 +100,31 @@ export function ConferenceDetail({ conferenceId }: { conferenceId: string }) {
             }
           />
         </>
-      ) : (
-        <article className="workspace-card compact">
-          <h2>Cached Prep</h2>
+      ) : snapshot ? (
+        <>
           <p className="lede">
             Opening this tab does not start research or AI. Only stored snapshots are shown.
           </p>
-          {snapshot ? (
-            <>
-              <p className="provenance">
-                Last researched {snapshot.researchedAt}
-                {snapshot.simulatedAt ? ` · simulated replay ${snapshot.simulatedAt}` : ""}
-                {" · Q "}
-                {score.q === null ? "Unknown" : score.q}
-              </p>
-              <ul className="link-list">
-                {namedPeople.map((person) => (
-                  <li key={recordKey(person)}>
-                    <span>
-                      {person.name} · {person.title} · {person.company}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </>
-          ) : (
-            <p className="empty">No cached Prep snapshot exists for this event.</p>
-          )}
-        </article>
+          <ResearchStatus
+            researchKey={conference.demoScenarioId ?? conference.id}
+            snapshot={snapshot}
+            asOf={state.createdAt}
+          />
+          <PrepList
+            conferenceId={conference.id}
+            researchKey={conference.demoScenarioId ?? conference.id}
+            snapshot={snapshot}
+            previous={PREP_SNAPSHOTS.find(
+              (candidate) =>
+                candidate.conferenceId === snapshot.conferenceId &&
+                candidate.researchedAt < snapshot.researchedAt,
+            )}
+            prepStatuses={state.prepStatuses}
+          />
+        </>
+      ) : (
+        <p className="empty">No cached Prep snapshot exists for this event. Opening this tab does not start research.</p>
       )}
     </section>
   );
-}
-
-function recordKey(person: { id: string }): string {
-  return person.id;
 }

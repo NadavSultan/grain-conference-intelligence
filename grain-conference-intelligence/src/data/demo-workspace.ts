@@ -106,5 +106,6 @@ export function createDemoWorkspace(): WorkspaceStateV1 {
       "traveltech-show-2027": { decision: "watch", owner: "Sam" },
     },
     scoreSnapshots: [],
+    outreachDrafts: {},
   });
 }

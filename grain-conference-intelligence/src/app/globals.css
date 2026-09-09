@@ -140,12 +140,20 @@ h1 {
 .coverage-warning, .demo-warning { background: var(--canvas); border-left: 3px solid var(--signature-blue); padding: 8px 12px; }
 .demo-warning { border-left-color: #c2410c; }
 a { color: var(--action); }
-@media (max-width: 640px) {
-  .conference-card { flex-direction: column; }
+.summary-strip { display: flex; flex-wrap: wrap; gap: 8px; }
+.evidence-card { border-top: 1px solid var(--border); padding-top: 12px; }
+textarea {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  padding: 8px 10px;
+  width: 100%;
 }
+button:disabled { opacity: 0.55; }
 @media (max-width: 640px) {
   .app-bar { align-items: flex-start; flex-direction: column; gap: 4px; }
   .workspace-card { grid-template-columns: 1fr; }
+  .conference-card { flex-direction: column; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

@@ -185,6 +185,13 @@ export interface WorkspaceStateV1 {
   simulatedResearchRuns: Record<string, string>;
   conferencePlans: Record<string, ConferencePlan>;
   scoreSnapshots: ConferenceScoreResult[];
+  outreachDrafts: Record<
+    string,
+    {
+      email?: { subject?: string | null; body: string };
+      linkedin?: { body: string };
+    }
+  >;
 }
 
 export type WorkspaceAction =
@@ -201,5 +208,30 @@ export type WorkspaceAction =
     }
   | { type: "plan/set-owner"; conferenceId: string; owner: string | null }
   | { type: "score/record-snapshot"; score: ConferenceScoreResult }
+  | {
+      type: "prep/set-status";
+      conferenceId: string;
+      personId: string;
+      status: PrepStatus;
+    }
+  | {
+      type: "prep/acknowledge-coordination";
+      conferenceId: string;
+      personId: string;
+      acknowledgedAt: string;
+    }
+  | {
+      type: "prep/activate-snapshot";
+      conferenceId: string;
+      snapshotId: string;
+      simulatedAt: string;
+    }
+  | {
+      type: "draft/update";
+      key: string;
+      channel: "email" | "linkedin";
+      subject?: string | null;
+      body: string;
+    }
   | { type: "workspace/replace"; state: WorkspaceStateV1 }
   | { type: "workspace/reset"; state: WorkspaceStateV1 };
