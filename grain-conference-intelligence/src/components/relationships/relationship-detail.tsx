@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { CONFERENCES } from "@/data/conferences";
 import { RelationshipCopilot } from "@/components/copilot/relationship-copilot";
+import { SyncPreview } from "@/components/crm/sync-preview";
 import { deriveRelationshipEligibility } from "@/features/relationships/eligibility";
 import { useWorkspace } from "@/workspace/provider";
 import type { TimelineKind } from "@/domain/types";
@@ -115,6 +116,19 @@ export function RelationshipDetail({ contactId }: { contactId: string }) {
           );
         })}
       </ul>
+      <SyncPreview
+        contactId={contactId}
+        sourceKind={entries.some((entry) => entry.kind === "actual_encounter") ? "encounter" : "prep"}
+        sourceId={
+          entries.filter((entry) => entry.kind === "actual_encounter").at(-1)?.id ??
+          `prep-${contactId}`
+        }
+        crmState={contactId === "david" ? "owned_by_other" : contactId === "marcus" ? "owned_by_me" : "not_present"}
+        conferenceName={
+          CONFERENCES.find((item) => item.demoScenarioId === "money20-eu-demo")?.name ??
+          "Money20/20 Europe"
+        }
+      />
       <RelationshipCopilot
         personId={contactId}
         companyId={contact.company.toLowerCase().replace(/[^a-z0-9]+/g, "-")}

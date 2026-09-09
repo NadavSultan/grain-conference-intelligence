@@ -47,6 +47,7 @@ button, a, [tabindex] { border-radius: 8px; }
 .app-main {
   margin: 0 auto;
   max-width: 1200px;
+  min-width: 0;
   padding: clamp(24px, 5vw, 56px) clamp(16px, 4vw, 48px);
 }
 .workspace-card {
@@ -85,7 +86,7 @@ h1 {
   margin-top: 7px;
 }
 .workspace-loading { color: var(--secondary); padding: 24px; }
-.page-stack { display: grid; gap: 24px; }
+.page-stack { display: grid; gap: 24px; overflow-wrap: anywhere; }
 .page-stack h2, .page-stack h3 { font-size: 20px; margin: 0 0 8px; }
 .focus-grid, .filter-bar, .score-meta, .status-row { display: grid; gap: 16px; }
 .focus-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }

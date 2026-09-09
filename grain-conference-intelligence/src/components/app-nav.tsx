@@ -9,6 +9,7 @@ const ROUTES = [
   { href: "/planning", label: "Planning" },
   { href: "/capture", label: "Capture" },
   { href: "/relationships", label: "Relationships" },
+  { href: "/settings", label: "Settings" },
 ] as const;
 
 export function AppNav() {

@@ -271,4 +271,22 @@ export const workspaceStateV1Schema = z.object({
       }),
     )
     .default({}),
+  crmSimulations: z
+    .record(
+      z.string(),
+      z.object({
+        idempotencyKey: z.string().min(1),
+        contactStep: z.object({
+          status: z.enum(["created", "reused", "failed", "blocked"]),
+          id: z.string().nullable(),
+          reason: z.string().optional(),
+        }),
+        noteStep: z.object({
+          status: z.enum(["created", "reused", "failed", "blocked"]),
+          id: z.string().nullable(),
+          reason: z.string().optional(),
+        }),
+      }),
+    )
+    .default({}),
 });

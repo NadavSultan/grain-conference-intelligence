@@ -54,11 +54,11 @@ export function workspaceReducer(
         },
       };
     }
-    case "score/record-snapshot":
-      return {
-        ...state,
-        scoreSnapshots: appendScoreSnapshot(state.scoreSnapshots, action.score),
-      };
+    case "score/record-snapshot": {
+      const scoreSnapshots = appendScoreSnapshot(state.scoreSnapshots, action.score);
+      if (scoreSnapshots === state.scoreSnapshots) return state;
+      return { ...state, scoreSnapshots };
+    }
     case "prep/set-status": {
       const key = `${action.conferenceId}:${action.personId}`;
       return {
@@ -112,6 +112,11 @@ export function workspaceReducer(
       return {
         ...state,
         copilotBriefs: { ...state.copilotBriefs, [action.personId]: action.stored },
+      };
+    case "crm/record":
+      return {
+        ...state,
+        crmSimulations: { ...state.crmSimulations, [action.record.idempotencyKey]: action.record },
       };
     case "capture/save": {
       if (

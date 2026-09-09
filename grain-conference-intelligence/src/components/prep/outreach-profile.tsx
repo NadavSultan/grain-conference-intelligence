@@ -8,6 +8,7 @@ import type { PrepStatus } from "@/domain/types";
 import { snapshotForConference } from "@/features/conferences/scoring";
 import { canProspect, linkedInHref, mailtoHref, slackHref } from "@/features/prep/actions";
 import { RelationshipCopilot } from "@/components/copilot/relationship-copilot";
+import { SyncPreview } from "@/components/crm/sync-preview";
 import { useWorkspace } from "@/workspace/provider";
 
 const STATUSES: PrepStatus[] = [
@@ -63,7 +64,11 @@ export function OutreachProfile({
   const evidence = ALL_EVIDENCE.filter((item) => item.personId === personId);
 
   async function copy(text: string) {
-    await navigator.clipboard.writeText(text);
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // Clipboard can be unavailable in restricted browser contexts; drafts remain editable.
+    }
   }
 
   return (
@@ -324,9 +329,6 @@ export function OutreachProfile({
           >
             Mark contacted
           </button>
-          <button type="button" className="chip" disabled={gate.crmIsNew && !gate.canCreateExactCrm}>
-            {gate.crmIsNew ? "Create CRM (preview)" : "View CRM (demo)"}
-          </button>
           <button
             type="button"
             className="chip"
@@ -344,6 +346,13 @@ export function OutreachProfile({
         </div>
         <p className="provenance">No button sends email, LinkedIn, Slack, or a live HubSpot write.</p>
       </section>
+      <SyncPreview
+        contactId={personId}
+        sourceKind="prep"
+        sourceId={snapshotRecord?.id ?? personId}
+        crmState={snapshotRecord?.crmState ?? "unknown"}
+        conferenceName={conference.name}
+      />
       <RelationshipCopilot
         personId={personId}
         companyId={snapshotRecord?.companyId ?? "payloom"}

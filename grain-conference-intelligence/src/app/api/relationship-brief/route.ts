@@ -25,6 +25,14 @@ interface BriefRequest {
   canDraftLinkedIn: boolean;
 }
 
+export async function GET(): Promise<Response> {
+  return Response.json({
+    liveConfigured: Boolean(process.env.OPENAI_API_KEY && process.env.AI_USAGE_SECRET),
+    model: process.env.OPENAI_MODEL ?? "gpt-5.4-mini",
+    hubspotLive: false,
+  });
+}
+
 export function signUsageCookie(remaining: number): string {
   const normalized = Math.max(0, Math.min(USAGE_MAX, remaining));
   const payload = String(normalized);

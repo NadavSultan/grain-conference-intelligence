@@ -217,6 +217,18 @@ export interface StoredCopilotBrief {
   brief: RelationshipBrief;
 }
 
+export interface CrmStepResult {
+  status: "created" | "reused" | "failed" | "blocked";
+  id: string | null;
+  reason?: string;
+}
+
+export interface CrmSimulationRecord {
+  idempotencyKey: string;
+  contactStep: CrmStepResult;
+  noteStep: CrmStepResult;
+}
+
 export interface CaptureDraft {
   name: string;
   company: string;
@@ -254,6 +266,7 @@ export interface WorkspaceStateV1 {
   matchReviews: MatchReview[];
   captureDrafts: Record<string, CaptureDraft>;
   copilotBriefs: Record<string, StoredCopilotBrief>;
+  crmSimulations: Record<string, CrmSimulationRecord>;
 }
 
 export type WorkspaceAction =
@@ -313,5 +326,6 @@ export type WorkspaceAction =
   | { type: "match/reject"; reviewId: string }
   | { type: "capture/draft"; id: string; draft: CaptureDraft }
   | { type: "copilot/store"; personId: string; stored: StoredCopilotBrief }
+  | { type: "crm/record"; record: CrmSimulationRecord }
   | { type: "workspace/replace"; state: WorkspaceStateV1 }
   | { type: "workspace/reset"; state: WorkspaceStateV1 };
