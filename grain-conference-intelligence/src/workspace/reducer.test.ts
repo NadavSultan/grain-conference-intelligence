@@ -1,0 +1,119 @@
+import { createElement } from "react";
+import { render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it } from "vitest";
+
+import { createDemoWorkspace } from "@/data/demo-workspace";
+import {
+  loadWorkspace,
+  resetWorkspaceStorage,
+  WORKSPACE_STORAGE_KEY,
+} from "@/workspace/state";
+import { workspaceReducer } from "@/workspace/reducer";
+import { useWorkspace, WorkspaceProvider } from "@/workspace/provider";
+
+beforeEach(() => {
+  localStorage.clear();
+});
+
+describe("workspace reducer", () => {
+  it("adds a Prep person to the field list only once", () => {
+    const seed = createDemoWorkspace();
+    const once = workspaceReducer(seed, {
+      type: "field/add",
+      conferenceId: "money20-eu-demo",
+      personId: "marcus",
+    });
+    const twice = workspaceReducer(once, {
+      type: "field/add",
+      conferenceId: "money20-eu-demo",
+      personId: "marcus",
+    });
+
+    expect(twice.fieldList).toHaveLength(1);
+  });
+
+  it("records Didn't meet without creating an actual encounter", () => {
+    const seed = createDemoWorkspace();
+    const actualBefore = seed.timeline.filter(
+      (entry) => entry.kind === "actual_encounter",
+    );
+    const next = workspaceReducer(seed, {
+      type: "meeting/outcome",
+      plannedMeetingId: "pm-marcus",
+      outcome: "did_not_meet",
+    });
+
+    expect(next.plannedMeetings[0]?.outcome).toBe("did_not_meet");
+    expect(
+      next.timeline.filter((entry) => entry.kind === "actual_encounter"),
+    ).toHaveLength(actualBefore.length);
+  });
+});
+
+describe("workspace persistence boundary", () => {
+  it("resets only this application's stored state on a schema-version mismatch", () => {
+    localStorage.setItem(WORKSPACE_STORAGE_KEY, JSON.stringify({ version: 99 }));
+    localStorage.setItem("another-application", "keep-me");
+
+    const loaded = loadWorkspace(localStorage, createDemoWorkspace);
+
+    expect(loaded).toEqual(createDemoWorkspace());
+    expect(localStorage.getItem(WORKSPACE_STORAGE_KEY)).toBeNull();
+    expect(localStorage.getItem("another-application")).toBe("keep-me");
+  });
+
+  it("preserves a previously stored valid workspace during hydration", () => {
+    const stored = workspaceReducer(createDemoWorkspace(), {
+      type: "field/add",
+      conferenceId: "money20-eu-demo",
+      personId: "sam",
+    });
+    localStorage.setItem(WORKSPACE_STORAGE_KEY, JSON.stringify(stored));
+
+    expect(loadWorkspace(localStorage, createDemoWorkspace)).toEqual(stored);
+  });
+
+  it("hydrates the provider from valid storage before persistence starts", async () => {
+    const stored = workspaceReducer(createDemoWorkspace(), {
+      type: "field/add",
+      conferenceId: "money20-eu-demo",
+      personId: "sam",
+    });
+    localStorage.setItem(WORKSPACE_STORAGE_KEY, JSON.stringify(stored));
+
+    function Probe() {
+      const { state, hydrated } = useWorkspace();
+      return createElement(
+        "output",
+        null,
+        hydrated ? state.fieldList.map((item) => item.personId).join(",") : "loading",
+      );
+    }
+
+    render(createElement(WorkspaceProvider, null, createElement(Probe)));
+
+    await waitFor(() => expect(screen.getByText("sam")).toBeInTheDocument());
+    expect(JSON.parse(localStorage.getItem(WORKSPACE_STORAGE_KEY) ?? "null")).toEqual(
+      stored,
+    );
+  });
+
+  it("falls back to a fresh demo workspace for invalid stored data", () => {
+    localStorage.setItem(WORKSPACE_STORAGE_KEY, "not valid JSON");
+
+    expect(() => loadWorkspace(localStorage, createDemoWorkspace)).not.toThrow();
+    expect(loadWorkspace(localStorage, createDemoWorkspace)).toEqual(
+      createDemoWorkspace(),
+    );
+  });
+
+  it("reset removes only the conference-intelligence key", () => {
+    localStorage.setItem(WORKSPACE_STORAGE_KEY, "workspace");
+    localStorage.setItem("another-application", "keep-me");
+
+    resetWorkspaceStorage(localStorage);
+
+    expect(localStorage.getItem(WORKSPACE_STORAGE_KEY)).toBeNull();
+    expect(localStorage.getItem("another-application")).toBe("keep-me");
+  });
+});
