@@ -10,9 +10,58 @@ import {
   PREP_SNAPSHOTS,
   PROFILE_CLAIMS,
   PROFILES,
+  type FullProfileId,
 } from "@/data/prep-snapshots";
 import { createDemoWorkspace } from "@/data/demo-workspace";
 import { workspaceStateV1Schema } from "@/domain/schemas";
+import type { EvidenceRecord, ProfileClaimReference, TimelineEntry } from "@/domain/types";
+
+function exhibitAnchorText(evidence: EvidenceRecord): string {
+  const url = new URL(evidence.exhibitUrl, "https://local.test");
+  const exhibit = readFileSync(join(process.cwd(), "public", url.pathname), "utf8");
+  const parsed = document.implementation.createHTMLDocument();
+  parsed.documentElement.innerHTML = exhibit;
+  const anchor = parsed.getElementById(url.hash.slice(1));
+  expect(anchor, evidence.exhibitUrl).not.toBeNull();
+  return anchor?.textContent ?? "";
+}
+
+function claimSupportCorpus(
+  claim: ProfileClaimReference,
+  evidenceById: Map<string, EvidenceRecord>,
+  timelineById: Map<string, TimelineEntry>,
+): string {
+  const evidenceText = claim.evidenceIds.flatMap((id) => {
+    const evidence = evidenceById.get(id);
+    expect(evidence, id).toBeDefined();
+    return [evidence?.claim, evidence?.quote, exhibitAnchorText(evidence!)];
+  });
+  const timelineText = claim.timelineIds.map((id) => {
+    const entry = timelineById.get(id);
+    expect(entry, id).toBeDefined();
+    return entry?.summary;
+  });
+  return [...evidenceText, ...timelineText].filter(Boolean).join("\n");
+}
+
+function factualDisplayPaths(personId: FullProfileId): string[] {
+  const profile = PROFILES[personId];
+  return [
+    "identity.name", "identity.title", "identity.company", "headline",
+    "contact.linkedIn", profile.contact.email ? "contact.email" : "contact.emailGap",
+    ...profile.attendanceEvidence.map((_, index) => `attendanceEvidence.${index}`),
+    ...profile.whyThisPersonMatters.map((_, index) => `whyThisPersonMatters.${index}`),
+    ...profile.relationshipHistory.map((_, index) => `relationshipHistory.${index}`),
+    ...profile.recentSignals.map((_, index) => `recentSignals.${index}`),
+    "suggestedAngle",
+    ...(profile.coordinationStep ? ["coordinationStep"] : []),
+    ...(profile.relationshipRead.text ? ["relationshipRead.text"] : []),
+    ...profile.relationshipRead.counterEvidence.map((_, index) => `relationshipRead.counterEvidence.${index}`),
+    ...(profile.drafts.email ? ["drafts.email.body"] : []),
+    ...(profile.drafts.linkedIn ? ["drafts.linkedIn.body"] : []),
+    "nextAction",
+  ].sort();
+}
 
 describe("conference source ledger", () => {
   it("matches the hand-verified organizer ledger for schedule, venue, and audience", () => {
@@ -171,155 +220,14 @@ describe("trusted Prep fixtures", () => {
       priya: "lumio-marketplace",
       marcus: "payloom",
     } as const;
-    const expectedSupport = {
-      sam: {
-        "identity.name": { evidenceIds: ["sam-role-linkedin"], timelineIds: [] },
-        "identity.title": { evidenceIds: ["sam-role-linkedin"], timelineIds: [] },
-        "identity.company": { evidenceIds: ["sam-company-facts"], timelineIds: [] },
-        headline: { evidenceIds: ["sam-attendance-linkedin", "sam-crm-gap"], timelineIds: [] },
-        prepStatus: { evidenceIds: ["sam-crm-gap"], timelineIds: [] },
-        "contact.linkedIn": { evidenceIds: ["sam-attendance-linkedin"], timelineIds: [] },
-        "contact.email": { evidenceIds: ["sam-email-pattern"], timelineIds: [] },
-        "attendanceEvidence.0": { evidenceIds: ["sam-attendance-linkedin"], timelineIds: [] },
-        "whyThisPersonMatters.0": { evidenceIds: ["sam-role-linkedin"], timelineIds: [] },
-        "whyThisPersonMatters.1": { evidenceIds: ["sam-posting-pattern"], timelineIds: [] },
-        "whyThisPersonMatters.2": { evidenceIds: ["sam-role-linkedin"], timelineIds: [] },
-        "whyThisPersonMatters.3": { evidenceIds: ["sam-company-facts"], timelineIds: [] },
-        "whyThisPersonMatters.4": { evidenceIds: ["sam-currency-expansion"], timelineIds: [] },
-        "whyThisPersonMatters.5": { evidenceIds: ["sam-fx-job"], timelineIds: [] },
-        "whyThisPersonMatters.6": { evidenceIds: ["sam-provider-unknown"], timelineIds: [] },
-        "whyThisPersonMatters.7": { evidenceIds: ["sam-provider-unknown"], timelineIds: [] },
-        "relationshipHistory.0": { evidenceIds: ["sam-crm-gap"], timelineIds: [] },
-        "recentSignals.0": { evidenceIds: ["sam-attendance-linkedin"], timelineIds: [] },
-        "recentSignals.1": { evidenceIds: ["sam-currency-expansion"], timelineIds: [] },
-        "recentSignals.2": { evidenceIds: ["sam-fx-job"], timelineIds: [] },
-        suggestedAngle: { evidenceIds: ["sam-attendance-linkedin", "sam-currency-expansion", "sam-fx-job"], timelineIds: [] },
-        "drafts.email.body": { evidenceIds: ["sam-attendance-linkedin", "sam-currency-expansion"], timelineIds: [] },
-        "drafts.linkedIn.body": { evidenceIds: ["sam-attendance-linkedin", "sam-currency-expansion"], timelineIds: [] },
-        nextAction: { evidenceIds: ["sam-attendance-linkedin", "sam-email-pattern"], timelineIds: [] },
-      },
-      david: {
-        "identity.name": { evidenceIds: ["david-profile-company"], timelineIds: [] },
-        "identity.title": { evidenceIds: ["david-profile-company"], timelineIds: [] },
-        "identity.company": { evidenceIds: ["david-profile-company"], timelineIds: [] },
-        headline: { evidenceIds: ["david-agenda-panel", "david-crm-history"], timelineIds: [] },
-        prepStatus: { evidenceIds: ["david-crm-history"], timelineIds: [] },
-        "contact.linkedIn": { evidenceIds: ["david-profile-company"], timelineIds: [] },
-        "contact.email": { evidenceIds: ["david-crm-history"], timelineIds: [] },
-        "attendanceEvidence.0": { evidenceIds: ["david-agenda-panel"], timelineIds: [] },
-        "attendanceEvidence.1": { evidenceIds: ["david-x-panel"], timelineIds: [] },
-        "whyThisPersonMatters.0": { evidenceIds: ["david-profile-company"], timelineIds: [] },
-        "whyThisPersonMatters.1": { evidenceIds: ["david-profile-company"], timelineIds: [] },
-        "whyThisPersonMatters.2": { evidenceIds: ["david-profile-company"], timelineIds: [] },
-        "whyThisPersonMatters.3": { evidenceIds: ["david-fx-margin"], timelineIds: [] },
-        "whyThisPersonMatters.4": { evidenceIds: ["david-forwards", "david-bank-inference"], timelineIds: [] },
-        "whyThisPersonMatters.5": { evidenceIds: ["david-provider-unknown"], timelineIds: [] },
-        "relationshipHistory.0": { evidenceIds: ["david-crm-history"], timelineIds: [] },
-        "relationshipHistory.1": { evidenceIds: ["david-crm-history"], timelineIds: [] },
-        "relationshipHistory.2": { evidenceIds: ["david-crm-history"], timelineIds: [] },
-        "relationshipHistory.3": { evidenceIds: ["david-crm-history"], timelineIds: [] },
-        "recentSignals.0": { evidenceIds: ["david-x-panel"], timelineIds: [] },
-        "recentSignals.1": { evidenceIds: ["david-fx-margin", "david-forwards"], timelineIds: [] },
-        "recentSignals.2": { evidenceIds: ["david-thai-acquisition"], timelineIds: [] },
-        suggestedAngle: { evidenceIds: ["david-crm-history", "david-fx-margin", "david-thai-acquisition", "david-agenda-panel"], timelineIds: [] },
-        coordinationStep: { evidenceIds: ["david-crm-history", "david-agenda-panel"], timelineIds: [] },
-        "relationshipRead.text": { evidenceIds: ["david-crm-history"], timelineIds: [] },
-        "relationshipRead.counterEvidence.0": { evidenceIds: ["david-crm-history"], timelineIds: [] },
-        "relationshipRead.counterEvidence.1": { evidenceIds: ["david-crm-history"], timelineIds: [] },
-        "drafts.email.body": { evidenceIds: ["david-agenda-panel", "david-forwards", "david-thai-acquisition"], timelineIds: [] },
-        nextAction: { evidenceIds: ["david-crm-history"], timelineIds: [] },
-      },
-      priya: {
-        "identity.name": { evidenceIds: ["priya-profile-company"], timelineIds: [] },
-        "identity.title": { evidenceIds: ["priya-role"], timelineIds: [] },
-        "identity.company": { evidenceIds: ["priya-profile-company"], timelineIds: [] },
-        headline: { evidenceIds: ["priya-dinner-rsvp", "priya-crm-gap"], timelineIds: [] },
-        prepStatus: { evidenceIds: ["priya-crm-gap"], timelineIds: [] },
-        "contact.linkedIn": { evidenceIds: ["priya-profile-company"], timelineIds: [] },
-        "contact.emailGap": { evidenceIds: ["priya-crm-gap"], timelineIds: [] },
-        "attendanceEvidence.0": { evidenceIds: ["priya-dinner-rsvp"], timelineIds: [] },
-        "attendanceEvidence.1": { evidenceIds: ["priya-speaker-sponsor-gap"], timelineIds: [] },
-        "whyThisPersonMatters.0": { evidenceIds: ["priya-profile-company"], timelineIds: [] },
-        "whyThisPersonMatters.1": { evidenceIds: ["priya-role"], timelineIds: [] },
-        "whyThisPersonMatters.2": { evidenceIds: ["priya-profile-company"], timelineIds: [] },
-        "whyThisPersonMatters.3": { evidenceIds: ["priya-payouts"], timelineIds: [] },
-        "whyThisPersonMatters.4": { evidenceIds: ["priya-fx-owner-unknown"], timelineIds: [] },
-        "whyThisPersonMatters.5": { evidenceIds: ["priya-provider-hedging-unknown"], timelineIds: [] },
-        "whyThisPersonMatters.6": { evidenceIds: ["priya-provider-hedging-unknown"], timelineIds: [] },
-        "relationshipHistory.0": { evidenceIds: ["priya-crm-gap"], timelineIds: [] },
-        "recentSignals.0": { evidenceIds: ["priya-dinner-rsvp"], timelineIds: [] },
-        "recentSignals.1": { evidenceIds: ["priya-payouts"], timelineIds: [] },
-        "recentSignals.2": { evidenceIds: ["priya-series-c"], timelineIds: [] },
-        suggestedAngle: { evidenceIds: ["priya-payouts", "priya-fx-owner-unknown"], timelineIds: [] },
-        "relationshipRead.counterEvidence.0": { evidenceIds: ["priya-dinner-rsvp"], timelineIds: [] },
-        "relationshipRead.counterEvidence.1": { evidenceIds: ["priya-fx-owner-unknown"], timelineIds: [] },
-        "drafts.linkedIn.body": { evidenceIds: ["priya-dinner-rsvp", "priya-payouts", "priya-fx-owner-unknown"], timelineIds: [] },
-        nextAction: { evidenceIds: ["priya-dinner-rsvp", "priya-crm-gap"], timelineIds: [] },
-      },
-      marcus: {
-        "identity.name": { evidenceIds: ["marcus-profile-company"], timelineIds: [] },
-        "identity.title": { evidenceIds: ["marcus-profile-company"], timelineIds: [] },
-        "identity.company": { evidenceIds: ["marcus-profile-company"], timelineIds: [] },
-        headline: { evidenceIds: ["marcus-speaker-current", "marcus-prior-encounter"], timelineIds: [] },
-        prepStatus: { evidenceIds: ["marcus-speaker-current"], timelineIds: [] },
-        "contact.linkedIn": { evidenceIds: ["marcus-profile-company"], timelineIds: [] },
-        "contact.email": { evidenceIds: ["marcus-profile-company"], timelineIds: ["reply-marcus-new-year"] },
-        "attendanceEvidence.0": { evidenceIds: ["marcus-speaker-current"], timelineIds: [] },
-        "attendanceEvidence.1": { evidenceIds: ["marcus-speaker-prior"], timelineIds: [] },
-        "whyThisPersonMatters.0": { evidenceIds: ["marcus-profile-company"], timelineIds: [] },
-        "whyThisPersonMatters.1": { evidenceIds: ["marcus-prior-encounter"], timelineIds: ["enc-marcus-money20-prior"] },
-        "whyThisPersonMatters.2": { evidenceIds: ["marcus-profile-company"], timelineIds: [] },
-        "whyThisPersonMatters.3": { evidenceIds: ["marcus-series-c"], timelineIds: [] },
-        "whyThisPersonMatters.4": { evidenceIds: ["marcus-prior-encounter"], timelineIds: ["enc-marcus-money20-prior"] },
-        "whyThisPersonMatters.5": { evidenceIds: ["marcus-prior-encounter"], timelineIds: ["enc-marcus-money20-prior"] },
-        "relationshipHistory.0": { evidenceIds: ["marcus-prior-encounter"], timelineIds: ["enc-marcus-money20-prior"] },
-        "relationshipHistory.1": { evidenceIds: [], timelineIds: ["outreach-marcus-one-pager", "reply-marcus-new-year"] },
-        "relationshipHistory.2": { evidenceIds: [], timelineIds: ["outreach-marcus-second-follow-up"] },
-        "relationshipHistory.3": { evidenceIds: [], timelineIds: ["observation-marcus-linkedin-like"] },
-        "relationshipHistory.4": { evidenceIds: ["marcus-prior-encounter"], timelineIds: [] },
-        "relationshipHistory.5": { evidenceIds: ["marcus-speaker-current"], timelineIds: [] },
-        "recentSignals.0": { evidenceIds: ["marcus-speaker-current"], timelineIds: [] },
-        "recentSignals.1": { evidenceIds: ["marcus-series-c"], timelineIds: [] },
-        "recentSignals.2": { evidenceIds: ["marcus-fx-job"], timelineIds: [] },
-        suggestedAngle: { evidenceIds: ["marcus-prior-encounter", "marcus-series-c", "marcus-warming-hypothesis", "marcus-speaker-current"], timelineIds: ["enc-marcus-money20-prior"] },
-        "relationshipRead.text": { evidenceIds: ["marcus-warming-hypothesis"], timelineIds: ["enc-marcus-money20-prior", "outreach-marcus-second-follow-up"] },
-        "relationshipRead.counterEvidence.0": { evidenceIds: [], timelineIds: ["outreach-marcus-second-follow-up"] },
-        "relationshipRead.counterEvidence.1": { evidenceIds: ["marcus-warming-hypothesis"], timelineIds: ["observation-marcus-linkedin-like"] },
-        "relationshipRead.counterEvidence.2": { evidenceIds: [], timelineIds: ["enc-marcus-money20-prior"] },
-        "drafts.email.body": { evidenceIds: ["marcus-prior-encounter", "marcus-series-c", "marcus-speaker-current"], timelineIds: ["enc-marcus-money20-prior"] },
-        "drafts.linkedIn.body": { evidenceIds: ["marcus-speaker-current", "marcus-prior-encounter", "marcus-series-c"], timelineIds: ["enc-marcus-money20-prior"] },
-        nextAction: { evidenceIds: ["marcus-speaker-current"], timelineIds: ["reply-marcus-new-year"] },
-      },
-    } as const;
 
     for (const personId of FULL_PROFILE_IDS) {
-      const profile = PROFILES[personId];
       const inventory = PROFILE_CLAIMS[personId];
-      const expectedPaths = Object.keys(expectedSupport[personId]).sort();
-
       expect(inventory.companyId).toBe(expectedCompanyIds[personId]);
-      expect(inventory.claims.map((claim) => claim.displayPath).sort()).toEqual(expectedPaths);
-      expect(expectedPaths).toEqual([
-        "identity.name", "identity.title", "identity.company", "headline", "prepStatus",
-        "contact.linkedIn", profile.contact.email ? "contact.email" : "contact.emailGap",
-        ...profile.attendanceEvidence.map((_, index) => `attendanceEvidence.${index}`),
-        ...profile.whyThisPersonMatters.map((_, index) => `whyThisPersonMatters.${index}`),
-        ...profile.relationshipHistory.map((_, index) => `relationshipHistory.${index}`),
-        ...profile.recentSignals.map((_, index) => `recentSignals.${index}`),
-        "suggestedAngle",
-        ...(profile.coordinationStep ? ["coordinationStep"] : []),
-        ...(profile.relationshipRead.text ? ["relationshipRead.text"] : []),
-        ...profile.relationshipRead.counterEvidence.map((_, index) => `relationshipRead.counterEvidence.${index}`),
-        ...(profile.drafts.email ? ["drafts.email.body"] : []),
-        ...(profile.drafts.linkedIn ? ["drafts.linkedIn.body"] : []),
-        "nextAction",
-      ].sort());
+      expect(inventory.claims.map((claim) => claim.displayPath).sort()).toEqual(factualDisplayPaths(personId));
+      expect(inventory.claims.some((claim) => claim.displayPath === "prepStatus")).toBe(false);
       for (const claim of inventory.claims) {
         expect(claim.evidenceIds.length + claim.timelineIds.length, `${personId}:${claim.displayPath}`).toBeGreaterThan(0);
-        expect(
-          { evidenceIds: claim.evidenceIds, timelineIds: claim.timelineIds },
-          `${personId}:${claim.displayPath}`,
-        ).toEqual(expectedSupport[personId][claim.displayPath as keyof typeof expectedSupport[typeof personId]]);
         for (const evidenceId of claim.evidenceIds) {
           const evidence = evidenceById.get(evidenceId);
           expect(evidence, `${personId}:${claim.displayPath}:${evidenceId}`).toBeDefined();
@@ -327,7 +235,7 @@ describe("trusted Prep fixtures", () => {
           expect(evidence?.companyId).toBe(inventory.companyId);
         }
         for (const timelineId of claim.timelineIds) {
-          const timeline = timelineById.get(timelineId) as (typeof workspace.timeline)[number] & { companyId?: string };
+          const timeline = timelineById.get(timelineId);
           expect(timeline, `${personId}:${claim.displayPath}:${timelineId}`).toBeDefined();
           expect(timeline?.personId).toBe(personId);
           expect(timeline?.companyId).toBe(inventory.companyId);
@@ -354,6 +262,195 @@ describe("trusted Prep fixtures", () => {
         ),
         personId,
       ).toBe(false);
+    }
+  });
+
+  it("keeps prepStatus as user-facing profile content without attributing it to public or CRM evidence", () => {
+    expect(PROFILES.sam.prepStatus).toBe("To contact");
+    expect(PROFILES.david.prepStatus).toBe("Needs coordination");
+    expect(PROFILES.priya.prepStatus).toBe("To contact");
+    expect(PROFILES.marcus.prepStatus).toBe("To contact");
+    for (const personId of FULL_PROFILE_IDS) {
+      expect(PROFILE_CLAIMS[personId].claims.map((claim) => claim.displayPath)).not.toContain("prepStatus");
+    }
+  });
+
+  it("cites exact identity and contact values, or an explicit email Unknown gap", () => {
+    const workspace = createDemoWorkspace();
+    const evidenceById = new Map(ALL_EVIDENCE.map((item) => [item.id, item]));
+    const timelineById = new Map(workspace.timeline.map((item) => [item.id, item]));
+
+    for (const personId of FULL_PROFILE_IDS) {
+      const profile = PROFILES[personId];
+      const claims = Object.fromEntries(PROFILE_CLAIMS[personId].claims.map((claim) => [claim.displayPath, claim]));
+      const nameCorpus = claimSupportCorpus(claims["identity.name"], evidenceById, timelineById);
+      const titleCorpus = claimSupportCorpus(claims["identity.title"], evidenceById, timelineById);
+      const companyCorpus = claimSupportCorpus(claims["identity.company"], evidenceById, timelineById);
+      const linkedInCorpus = claimSupportCorpus(claims["contact.linkedIn"], evidenceById, timelineById);
+
+      expect(nameCorpus, `${personId} name`).toContain(profile.name);
+      expect(titleCorpus, `${personId} title`).toContain(profile.title);
+      expect(companyCorpus, `${personId} company`).toContain(profile.company);
+      expect(linkedInCorpus, `${personId} linkedin`).toContain(profile.contact.linkedIn.value);
+
+      if (profile.contact.email) {
+        const emailClaim = claims["contact.email"];
+        const emailCorpus = claimSupportCorpus(emailClaim, evidenceById, timelineById);
+        expect(emailCorpus, `${personId} email`).toContain(profile.contact.email.value);
+        if (profile.contact.email.confidence === "inferred") {
+          expect(emailCorpus, `${personId} inferred email`).toMatch(/inferred/i);
+        } else {
+          expect(emailCorpus, `${personId} verified email`).toMatch(/verified/i);
+        }
+      } else {
+        const gapClaim = claims["contact.emailGap"];
+        const gapCorpus = claimSupportCorpus(gapClaim, evidenceById, timelineById);
+        expect(gapClaim.evidenceIds, `${personId} email gap must not use CRM absence`).not.toContain("priya-crm-gap");
+        expect(gapCorpus, `${personId} email gap`).toMatch(/email/i);
+        expect(gapCorpus, `${personId} email unknown`).toMatch(/unknown|not available/i);
+        expect(gapCorpus, `${personId} email gap is not a CRM relationship claim`).not.toMatch(/no prior relationship/i);
+      }
+    }
+  });
+
+  it("supports every factual headline component with labelled attendance, tier, and CRM provenance", () => {
+    const workspace = createDemoWorkspace();
+    const evidenceById = new Map(ALL_EVIDENCE.map((item) => [item.id, item]));
+    const timelineById = new Map(workspace.timeline.map((item) => [item.id, item]));
+    const headlineComponents: Record<FullProfileId, string[]> = {
+      sam: ["Confirmed attending", "Tier A", "Not in HubSpot"],
+      david: ["Confirmed attending", "speaker", "Tier A", "In HubSpot", "owned by another rep", "last activity 14 months ago"],
+      priya: ["Likely attending", "Tier B", "Not in HubSpot"],
+      marcus: ["Confirmed attending", "speaker", "Tier A", "In HubSpot", "owned by me"],
+    };
+    const tierPremises: Record<FullProfileId, string[]> = {
+      sam: ["Acme Payments", "14 currencies", "Head of Treasury"],
+      david: ["Northwind Travel Group", "THB", "CFO"],
+      priya: ["Lumio Marketplace", "Unknown", "influencer"],
+      marcus: ["Payloom", "28 currencies", "Treasury Director"],
+    };
+
+    for (const personId of FULL_PROFILE_IDS) {
+      const claim = PROFILE_CLAIMS[personId].claims.find((item) => item.displayPath === "headline");
+      expect(claim, personId).toBeDefined();
+      const corpus = claimSupportCorpus(claim!, evidenceById, timelineById);
+      for (const component of headlineComponents[personId]) {
+        expect(corpus, `${personId} headline:${component}`).toContain(component);
+      }
+      for (const premise of tierPremises[personId]) {
+        expect(corpus, `${personId} tier premise:${premise}`).toContain(premise);
+      }
+      expect(corpus, `${personId} tier classification label`).toMatch(/classif|infer/i);
+    }
+  });
+
+  it("requires referenced evidence and exhibits to contain the distinctive facts of each displayed claim", () => {
+    const workspace = createDemoWorkspace();
+    const evidenceById = new Map(ALL_EVIDENCE.map((item) => [item.id, item]));
+    const timelineById = new Map(workspace.timeline.map((item) => [item.id, item]));
+    const requiredNeedles: Record<FullProfileId, Record<string, string[]>> = {
+      sam: {
+        "attendanceEvidence.0": ["swap notes on multi-currency settlement"],
+        "whyThisPersonMatters.0": ["January 2025", "Treasury Manager"],
+        "whyThisPersonMatters.1": ["cash forecasting", "payment-rail"],
+        "whyThisPersonMatters.2": ["decision maker", "Inferred"],
+        "whyThisPersonMatters.3": ["280", "Berlin", "Lisbon", "Acme Payments"],
+        "whyThisPersonMatters.4": ["14 currencies", "PLN", "MXN", "BRL"],
+        "whyThisPersonMatters.5": ["FX & Liquidity Analyst"],
+        "whyThisPersonMatters.6": ["Unknown"],
+        "whyThisPersonMatters.7": ["Unknown"],
+        "relationshipHistory.0": ["No HubSpot"],
+        "recentSignals.0": ["Heading to Money20/20"],
+        "recentSignals.1": ["six new settlement currencies"],
+        "recentSignals.2": ["FX & Liquidity Analyst"],
+        suggestedAngle: ["swap notes on multi-currency settlement", "inferred"],
+        "drafts.email.body": ["swap notes on multi-currency settlement", "six new settlement currencies"],
+        "drafts.linkedIn.body": ["MXN", "BRL"],
+        nextAction: ["Inferred"],
+      },
+      david: {
+        "attendanceEvidence.0": ["Treasury in travel: managing volatility when you pay in one currency and sell in another", "Thursday 14:00"],
+        "attendanceEvidence.1": ["Speaking on the treasury panel at Money20/20 Thursday 2pm"],
+        "whyThisPersonMatters.0": ["2022", "Finance Director"],
+        "whyThisPersonMatters.1": ["decision maker", "inference"],
+        "whyThisPersonMatters.2": ["600", "EUR", "THB", "GBP"],
+        "whyThisPersonMatters.3": ["1.8 percentage points"],
+        "whyThisPersonMatters.4": ["forward contracts", "Inferred"],
+        "whyThisPersonMatters.5": ["Unknown"],
+        "relationshipHistory.0": ["20 months", "webinar"],
+        "relationshipHistory.1": ["14 months"],
+        "relationshipHistory.2": ["not a priority this year"],
+        "relationshipHistory.3": ["No open deal"],
+        "recentSignals.0": ["Thursday 2pm"],
+        "recentSignals.1": ["1.8"],
+        "recentSignals.2": ["THB"],
+        suggestedAngle: ["wasn't a priority", "THB"],
+        coordinationStep: ["owned by", "treasury panel"],
+        "relationshipRead.text": ["Owned by another rep"],
+        "relationshipRead.counterEvidence.0": ["No reply"],
+        "relationshipRead.counterEvidence.1": ["No open deal"],
+        "drafts.email.body": ["forward", "THB"],
+        nextAction: ["Coordinate"],
+      },
+      priya: {
+        "attendanceEvidence.0": ["Fintech Founders Dinner"],
+        "attendanceEvidence.1": ["speaker", "sponsor"],
+        "whyThisPersonMatters.0": ["18 months", "gig-economy"],
+        "whyThisPersonMatters.1": ["influencer", "Inferred"],
+        "whyThisPersonMatters.2": ["30 countries", "900", "Dublin"],
+        "whyThisPersonMatters.3": ["Brazil", "Mexico"],
+        "whyThisPersonMatters.4": ["Unknown"],
+        "whyThisPersonMatters.5": ["Unknown"],
+        "whyThisPersonMatters.6": ["Unknown"],
+        "relationshipHistory.0": ["None"],
+        "recentSignals.0": ["Fintech Founders Dinner"],
+        "recentSignals.1": ["BRL", "MXN"],
+        "recentSignals.2": ["Series C", "LATAM"],
+        suggestedAngle: ["BRL", "MXN", "Unknown"],
+        "relationshipRead.counterEvidence.0": ["Likely"],
+        "relationshipRead.counterEvidence.1": ["Unknown"],
+        "drafts.linkedIn.body": ["Founders Dinner", "BRL", "MXN"],
+        nextAction: ["Unknown"],
+      },
+      marcus: {
+        "attendanceEvidence.0": ["Building payouts into 40 markets", "Wednesday 11:30"],
+        "attendanceEvidence.1": ["last year's"],
+        "whyThisPersonMatters.0": ["2023"],
+        "whyThisPersonMatters.1": ["decision maker"],
+        "whyThisPersonMatters.2": ["40 payout markets", "28 currencies", "350", "Amsterdam"],
+        "whyThisPersonMatters.3": ["12 new corridors", "Africa", "LATAM"],
+        "whyThisPersonMatters.4": ["the big pairs with our bank, the rest we eat"],
+        "whyThisPersonMatters.5": ["unnamed bank", "Cited"],
+        "relationshipHistory.0": ["revisit Q1"],
+        "relationshipHistory.1": ["one-pager", "new year"],
+        "relationshipHistory.2": ["No reply"],
+        "relationshipHistory.3": ["emerging-market corridors"],
+        "relationshipHistory.4": ["No open deal", "Lead"],
+        "relationshipHistory.5": ["Planned second encounter", "2nd encounter"],
+        "recentSignals.0": ["Building payouts into 40 markets"],
+        "recentSignals.1": ["12 new corridors"],
+        "recentSignals.2": ["Treasury Analyst, emerging markets FX"],
+        suggestedAngle: ["12", "infer"],
+        "relationshipRead.text": ["unclear"],
+        "relationshipRead.counterEvidence.0": ["No reply", "eight months"],
+        "relationshipRead.counterEvidence.1": ["like"],
+        "relationshipRead.counterEvidence.2": ["one actual"],
+        "drafts.email.body": ["12 new corridors", "fireside"],
+        "drafts.linkedIn.body": ["12 new corridors"],
+        nextAction: ["replied"],
+      },
+    };
+
+    for (const personId of FULL_PROFILE_IDS) {
+      const claims = Object.fromEntries(PROFILE_CLAIMS[personId].claims.map((claim) => [claim.displayPath, claim]));
+      for (const [displayPath, needles] of Object.entries(requiredNeedles[personId])) {
+        const claim = claims[displayPath];
+        expect(claim, `${personId}:${displayPath}`).toBeDefined();
+        const corpus = claimSupportCorpus(claim, evidenceById, timelineById);
+        for (const needle of needles) {
+          expect(corpus, `${personId}:${displayPath}:${needle}`).toContain(needle);
+        }
+      }
     }
   });
 
