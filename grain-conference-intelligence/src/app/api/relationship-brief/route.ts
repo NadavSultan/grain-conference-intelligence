@@ -10,7 +10,7 @@ import {
   validateRelationshipBrief,
   type CopilotEvidenceContext,
 } from "@/features/copilot/schema";
-import { resolveOpenAIApiKey } from "@/features/integrations/openai-credentials";
+import { isSameOrigin, openaiModel, resolveOpenAIApiKey } from "@/features/integrations/openai-credentials";
 import { deriveRelationshipEligibility } from "@/features/relationships/eligibility";
 
 import { jsonWithUsageCookie, readUsageRemaining } from "./usage";
@@ -38,12 +38,27 @@ export async function GET(request: Request): Promise<Response> {
   const resolved = resolveOpenAIApiKey(request);
   return Response.json({
     liveConfigured: resolved.source !== "none" && Boolean(process.env.AI_USAGE_SECRET),
-    model: process.env.OPENAI_MODEL ?? "gpt-5.4-mini",
+    model: openaiModel(),
     hubspotLive: false,
   });
 }
 
 export async function POST(request: Request): Promise<Response> {
+  if (!isSameOrigin(request)) {
+    return Response.json(
+      { ok: false, code: "forbidden", retryable: false, fallback: null },
+      { status: 403 },
+    );
+  }
+
+  const contentType = request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase();
+  if (contentType !== "application/json") {
+    return Response.json(
+      { ok: false, code: "invalid_request", retryable: false, fallback: null },
+      { status: 415 },
+    );
+  }
+
   const remaining = readUsageRemaining(request.headers.get("cookie"));
   let raw: unknown;
   try {
@@ -119,10 +134,11 @@ export async function POST(request: Request): Promise<Response> {
   const apiKey = resolved.apiKey;
   try {
     const client = new OpenAI({ apiKey });
-    const model = process.env.OPENAI_MODEL ?? "gpt-5.4-mini";
+    const model = openaiModel();
     const completion = await client.responses.create(
       {
         model,
+        store: false,
         input: [
           { role: "system", content: COPILOT_SYSTEM_PROMPT },
           {

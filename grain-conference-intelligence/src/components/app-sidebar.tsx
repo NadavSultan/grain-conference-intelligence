@@ -34,12 +34,12 @@ export function AppSidebar() {
         <Link href="/settings" className="integration-card" aria-label="Demo and live integration status">
           <strong>
             <span className={liveReady ? "status-dot status-dot-live" : "status-dot status-dot-demo"} />
-            Demo mode
+            {live?.mode === "live" ? "Live mode" : "Demo mode"}
           </strong>
           <p>
             HubSpot stays a persisted simulation. OpenAI:{" "}
             {live
-              ? liveReady
+              ? live.liveConfigured
                 ? `Live AI available · ${live.model}`
                 : "Not configured in this environment"
               : "Checking integration status…"}

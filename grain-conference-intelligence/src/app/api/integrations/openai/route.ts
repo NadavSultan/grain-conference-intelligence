@@ -23,29 +23,30 @@ export async function GET(request: Request): Promise<Response> {
 
 export async function POST(request: Request): Promise<Response> {
   if (!isSameOrigin(request)) {
-    return statusResponse({ configured: false, source: "none", model: openaiModel() }, 403);
+    return statusResponse(unconfiguredStatus(), 403);
   }
 
   const secret = integrationCredentialSecret();
   if (!secret) {
-    return statusResponse({ configured: false, source: "none", model: openaiModel() }, 503);
+    return statusResponse(unconfiguredStatus(), 503);
   }
 
   let raw: unknown;
   try {
     raw = await request.json();
   } catch {
-    return statusResponse({ configured: false, source: "none", model: openaiModel() }, 400);
+    return statusResponse(unconfiguredStatus(), 400);
   }
 
   const parsed = configureSchema.safeParse(raw);
   if (!parsed.success) {
-    return statusResponse({ configured: false, source: "none", model: openaiModel() }, 400);
+    return statusResponse(unconfiguredStatus(), 400);
   }
 
   const encrypted = encryptApiKey(parsed.data.apiKey, secret);
   const response = statusResponse({
     configured: true,
+    liveConfigured: Boolean(process.env.AI_USAGE_SECRET),
     source: "session",
     model: openaiModel(),
   });
@@ -61,12 +62,21 @@ export async function POST(request: Request): Promise<Response> {
 
 export async function DELETE(request: Request): Promise<Response> {
   if (!isSameOrigin(request)) {
-    return statusResponse({ configured: false, source: "none", model: openaiModel() }, 403);
+    return statusResponse(unconfiguredStatus(), 403);
   }
 
-  const response = statusResponse({ configured: false, source: "none", model: openaiModel() });
+  const response = statusResponse(unconfiguredStatus());
   response.headers.set("Set-Cookie", clearCredentialCookie(credentialCookieSecure()));
   return response;
+}
+
+function unconfiguredStatus(): OpenAICredentialStatus {
+  return {
+    configured: false,
+    liveConfigured: false,
+    source: "none",
+    model: openaiModel(),
+  };
 }
 
 function statusResponse(payload: OpenAICredentialStatus, status = 200): Response {

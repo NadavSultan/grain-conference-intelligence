@@ -129,4 +129,34 @@ describe("integration status", () => {
     expect(storageDump).not.toContain(FAKE_KEY);
     expect(document.body.textContent).not.toContain(FAKE_KEY);
   });
+
+  it("uses server liveConfigured and does not derive it from configured", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          configured: true,
+          liveConfigured: false,
+          source: "deployment",
+          model: "gpt-5.4-mini",
+        }),
+      ),
+    );
+
+    function Probe() {
+      const client = useIntegrationStatus();
+      if (!client) return <p>loading</p>;
+      return <p>{`live:${String(client.liveConfigured)} configured:${String(client.configured)}`}</p>;
+    }
+
+    render(
+      <IntegrationStatusProvider>
+        <Probe />
+      </IntegrationStatusProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("live:false configured:true")).toBeInTheDocument();
+    });
+  });
 });

@@ -122,6 +122,7 @@ describe("mobile tab labels", () => {
 
   afterEach(() => {
     cleanup();
+    sessionStorage.clear();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
@@ -134,5 +135,30 @@ describe("mobile tab labels", () => {
     );
     const tabs = screen.getByRole("navigation", { name: "Primary navigation" });
     expect(within(tabs).getByRole("link", { name: "Conferences" })).toHaveTextContent("Events");
+  });
+
+  it("shows the selected Live mode without claiming Live AI when liveConfigured is false", async () => {
+    sessionStorage.setItem("grain-openai-mode", "live");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          configured: true,
+          liveConfigured: false,
+          source: "deployment",
+          model: "gpt-5.4-mini",
+        }),
+      }),
+    );
+    const user = userEvent.setup();
+    renderShell();
+    await user.click(screen.getByRole("button", { name: "Open navigation" }));
+    const dialog = screen.getByRole("dialog", { name: "Navigation" });
+    await waitFor(() => {
+      expect(within(dialog).getByText("Live mode")).toBeInTheDocument();
+    });
+    expect(within(dialog).queryByText(/Live AI available/)).not.toBeInTheDocument();
+    expect(within(dialog).getByText(/OpenAI is not configured in this environment/)).toBeInTheDocument();
   });
 });

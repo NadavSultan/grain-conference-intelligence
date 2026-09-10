@@ -56,15 +56,21 @@ function writeStoredMode(mode: IntegrationMode) {
   }
 }
 
-function toStatus(payload: { configured?: boolean; source?: string; model?: string }): IntegrationStatus {
+type StatusPayload = {
+  configured?: boolean;
+  liveConfigured?: boolean;
+  source?: string;
+  model?: string;
+};
+
+function toStatus(payload: StatusPayload): IntegrationStatus {
   const source: CredentialSource =
     payload.source === "session" || payload.source === "deployment" ? payload.source : "none";
-  const configured = Boolean(payload.configured);
   return {
-    configured,
+    configured: Boolean(payload.configured),
     source,
     model: payload.model ?? "gpt-5.4-mini",
-    liveConfigured: configured,
+    liveConfigured: Boolean(payload.liveConfigured),
   };
 }
 
@@ -75,11 +81,7 @@ export function IntegrationStatusProvider({ children }: { children: ReactNode })
   const refresh = useCallback(async () => {
     try {
       const response = await fetch("/api/integrations/openai");
-      const payload = (await response.json()) as {
-        configured?: boolean;
-        source?: string;
-        model?: string;
-      };
+      const payload = (await response.json()) as StatusPayload;
       setStatus(toStatus(payload));
       return toStatus(payload);
     } catch {
@@ -92,7 +94,7 @@ export function IntegrationStatusProvider({ children }: { children: ReactNode })
   useEffect(() => {
     void fetch("/api/integrations/openai")
       .then((response) => response.json())
-      .then((payload: { configured?: boolean; source?: string; model?: string }) => {
+      .then((payload: StatusPayload) => {
         setStatus(toStatus(payload));
         setModeState(readStoredMode());
       })
@@ -112,11 +114,7 @@ export function IntegrationStatusProvider({ children }: { children: ReactNode })
         body: JSON.stringify({ apiKey }),
       });
       if (!response.ok) return false;
-      const payload = (await response.json()) as {
-        configured?: boolean;
-        source?: string;
-        model?: string;
-      };
+      const payload = (await response.json()) as StatusPayload;
       setStatus(toStatus(payload));
       setMode("live");
       return true;

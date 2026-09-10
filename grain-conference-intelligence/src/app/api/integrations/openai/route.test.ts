@@ -34,6 +34,7 @@ describe("GET/POST/DELETE /api/integrations/openai", () => {
   afterEach(() => {
     delete process.env.INTEGRATION_CREDENTIAL_SECRET;
     delete process.env.OPENAI_API_KEY;
+    delete process.env.AI_USAGE_SECRET;
     vi.unstubAllEnvs();
   });
 
@@ -90,7 +91,12 @@ describe("GET/POST/DELETE /api/integrations/openai", () => {
     );
     expect(response.status).toBe(503);
     const payload = await response.json();
-    expect(payload).toEqual({ configured: false, source: "none", model: "gpt-5.4-mini" });
+    expect(payload).toEqual({
+      configured: false,
+      liveConfigured: false,
+      source: "none",
+      model: "gpt-5.4-mini",
+    });
     expect(JSON.stringify(payload)).not.toContain(FAKE_KEY);
     expect(cookieHeader(response)).toBe("");
   });
@@ -106,7 +112,12 @@ describe("GET/POST/DELETE /api/integrations/openai", () => {
     );
     expect(response.status).toBe(200);
     const payload = await response.json();
-    expect(payload).toEqual({ configured: true, source: "session", model: "gpt-5.4-mini" });
+    expect(payload).toEqual({
+      configured: true,
+      liveConfigured: false,
+      source: "session",
+      model: "gpt-5.4-mini",
+    });
     expect(JSON.stringify(payload)).not.toContain(FAKE_KEY);
 
     const setCookie = cookieHeader(response);
@@ -128,8 +139,13 @@ describe("GET/POST/DELETE /api/integrations/openai", () => {
     );
     expect(status.headers.get("cache-control")).toBe("no-store");
     const statusPayload = await status.json();
-    expect(Object.keys(statusPayload).sort()).toEqual(["configured", "model", "source"]);
-    expect(statusPayload).toEqual({ configured: true, source: "session", model: "gpt-5.4-mini" });
+    expect(Object.keys(statusPayload).sort()).toEqual(["configured", "liveConfigured", "model", "source"]);
+    expect(statusPayload).toEqual({
+      configured: true,
+      liveConfigured: false,
+      source: "session",
+      model: "gpt-5.4-mini",
+    });
     expect(JSON.stringify(statusPayload)).not.toContain(FAKE_KEY);
   });
 
@@ -159,7 +175,12 @@ describe("GET/POST/DELETE /api/integrations/openai", () => {
       }),
     );
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ configured: false, source: "none", model: "gpt-5.4-mini" });
+    expect(await response.json()).toEqual({
+      configured: false,
+      liveConfigured: false,
+      source: "none",
+      model: "gpt-5.4-mini",
+    });
     const setCookie = cookieHeader(response);
     expect(setCookie).toContain(`${OPENAI_CREDENTIAL_COOKIE}=`);
     expect(setCookie).toContain("Max-Age=0");
@@ -175,7 +196,12 @@ describe("GET/POST/DELETE /api/integrations/openai", () => {
       }),
     );
     const payload = await response.json();
-    expect(payload).toEqual({ configured: false, source: "none", model: "gpt-5.4-mini" });
+    expect(payload).toEqual({
+      configured: false,
+      liveConfigured: false,
+      source: "none",
+      model: "gpt-5.4-mini",
+    });
   });
 
   it("rejects expired session cookies on GET", async () => {
@@ -187,7 +213,42 @@ describe("GET/POST/DELETE /api/integrations/openai", () => {
       }),
     );
     const payload = await response.json();
-    expect(payload).toEqual({ configured: false, source: "none", model: "gpt-5.4-mini" });
+    expect(payload).toEqual({
+      configured: false,
+      liveConfigured: false,
+      source: "none",
+      model: "gpt-5.4-mini",
+    });
+    expect(JSON.stringify(payload)).not.toContain(FAKE_KEY);
+  });
+
+  it("reports configured without liveConfigured when a key exists but AI_USAGE_SECRET is missing", async () => {
+    process.env.OPENAI_API_KEY = FAKE_KEY;
+    delete process.env.AI_USAGE_SECRET;
+    const { GET } = await loadRoute();
+    const response = await GET(new Request("http://localhost/api/integrations/openai"));
+    const payload = await response.json();
+    expect(payload).toEqual({
+      configured: true,
+      liveConfigured: false,
+      source: "deployment",
+      model: "gpt-5.4-mini",
+    });
+    expect(JSON.stringify(payload)).not.toContain(FAKE_KEY);
+  });
+
+  it("reports liveConfigured only when a credential and AI_USAGE_SECRET are both present", async () => {
+    process.env.OPENAI_API_KEY = FAKE_KEY;
+    process.env.AI_USAGE_SECRET = "test-usage-secret";
+    const { GET } = await loadRoute();
+    const response = await GET(new Request("http://localhost/api/integrations/openai"));
+    const payload = await response.json();
+    expect(payload).toEqual({
+      configured: true,
+      liveConfigured: true,
+      source: "deployment",
+      model: "gpt-5.4-mini",
+    });
     expect(JSON.stringify(payload)).not.toContain(FAKE_KEY);
   });
 

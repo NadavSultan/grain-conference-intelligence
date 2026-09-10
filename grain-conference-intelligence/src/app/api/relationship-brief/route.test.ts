@@ -72,15 +72,26 @@ function sessionCookie(apiKey = FAKE_SESSION_KEY): string {
   return `${OPENAI_CREDENTIAL_COOKIE}=${encryptApiKey(apiKey, CREDENTIAL_SECRET)}`;
 }
 
-async function postBrief(init?: { body?: unknown; rawBody?: string; cookie?: string }) {
+async function postBrief(init?: {
+  body?: unknown;
+  rawBody?: string;
+  cookie?: string;
+  origin?: string | null;
+  contentType?: string | null;
+}) {
   const { POST } = await import("./route");
+  const headers: Record<string, string> = {};
+  if (init?.origin !== null) {
+    headers.origin = init?.origin ?? "http://localhost";
+  }
+  if (init?.contentType !== null) {
+    headers["content-type"] = init?.contentType ?? "application/json";
+  }
+  if (init?.cookie) headers.cookie = init.cookie;
   return POST(
     new Request("http://localhost/api/relationship-brief", {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-        ...(init?.cookie ? { cookie: init.cookie } : {}),
-      },
+      headers,
       body: init?.rawBody ?? JSON.stringify(init?.body ?? marcusRequest()),
     }),
   );
@@ -234,7 +245,55 @@ describe("POST /api/relationship-brief", () => {
     expect(payload.model).toBe("gpt-5.4-mini");
     expect(payload.brief.evidenceEncounterIds).toEqual(["enc-marcus-money20-prior"]);
     expect(payload.usageRemaining).toBe(4);
+    expect(createMock.mock.calls[0]?.[0]).toMatchObject({ store: false, model: "gpt-5.4-mini" });
     expectNoSecrets(payload);
+  });
+
+  it("uses the documented default model when OPENAI_MODEL is blank", async () => {
+    process.env.OPENAI_API_KEY = FAKE_DEPLOY_KEY;
+    process.env.OPENAI_MODEL = "   ";
+    createMock.mockResolvedValue({ output_text: JSON.stringify(validUnclearBrief()) });
+    const response = await postBrief({ body: marcusRequest("live") });
+    const payload = await response.json();
+    expect(payload.ok).toBe(true);
+    expect(payload.model).toBe("gpt-5.4-mini");
+    expect(createMock.mock.calls[0]?.[0]).toMatchObject({ store: false, model: "gpt-5.4-mini" });
+  });
+
+  it("rejects missing or foreign Origin with 403 before OpenAI or usage work", async () => {
+    process.env.OPENAI_API_KEY = FAKE_DEPLOY_KEY;
+    createMock.mockResolvedValue({ output_text: JSON.stringify(validUnclearBrief()) });
+
+    const foreign = await postBrief({
+      body: marcusRequest("live"),
+      origin: "https://evil.example",
+    });
+    expect(foreign.status).toBe(403);
+    expect(openAiConstructor).not.toHaveBeenCalled();
+    expect(createMock).not.toHaveBeenCalled();
+    expect(foreign.headers.get("set-cookie") ?? "").not.toMatch(/grain-ai-usage=/);
+    expectNoSecrets(await foreign.json());
+
+    const missingOrigin = await postBrief({
+      body: marcusRequest("live"),
+      origin: null,
+    });
+    expect(missingOrigin.status).toBe(403);
+    expect(openAiConstructor).not.toHaveBeenCalled();
+    expect(createMock).not.toHaveBeenCalled();
+    expect(missingOrigin.headers.get("set-cookie") ?? "").not.toMatch(/grain-ai-usage=/);
+  });
+
+  it("rejects non-JSON content types before OpenAI or usage work", async () => {
+    process.env.OPENAI_API_KEY = FAKE_DEPLOY_KEY;
+    const response = await postBrief({
+      body: marcusRequest("live"),
+      contentType: "text/plain",
+    });
+    expect(response.status).toBe(415);
+    expect(openAiConstructor).not.toHaveBeenCalled();
+    expect(createMock).not.toHaveBeenCalled();
+    expect(response.headers.get("set-cookie") ?? "").not.toMatch(/grain-ai-usage=/);
   });
 
   it("rejects the sixth live call with usage_exhausted and keeps fallback usable", async () => {
@@ -247,6 +306,7 @@ describe("POST /api/relationship-brief", () => {
       new Request("http://localhost/api/relationship-brief", {
         method: "POST",
         headers: {
+          origin: "http://localhost",
           "content-type": "application/json",
           cookie: `grain-ai-usage=${exhausted}`,
         },

@@ -141,11 +141,11 @@ export function MobileHeader() {
             <Link href="/settings" className="integration-card" onClick={() => setOpen(false)}>
               <strong>
                 <span className={liveReady ? "status-dot status-dot-live" : "status-dot status-dot-demo"} />
-                Demo mode
+                {live?.mode === "live" ? "Live mode" : "Demo mode"}
               </strong>
               <p>
                 {live
-                  ? liveReady
+                  ? live.liveConfigured
                     ? `Live AI available · ${live.model}`
                     : "OpenAI is not configured in this environment"
                   : "Checking integration status…"}

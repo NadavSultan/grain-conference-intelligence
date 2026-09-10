@@ -8,6 +8,7 @@ export type CredentialSource = "session" | "deployment" | "none";
 
 export type OpenAICredentialStatus = {
   configured: boolean;
+  liveConfigured: boolean;
   source: CredentialSource;
   model: string;
 };
@@ -120,8 +121,10 @@ export function resolveOpenAIApiKey(request: Request): {
 
 export function credentialStatus(request: Request): OpenAICredentialStatus {
   const resolved = resolveOpenAIApiKey(request);
+  const configured = resolved.source !== "none";
   return {
-    configured: resolved.source !== "none",
+    configured,
+    liveConfigured: configured && Boolean(process.env.AI_USAGE_SECRET),
     source: resolved.source,
     model: openaiModel(),
   };
