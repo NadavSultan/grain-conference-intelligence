@@ -23,7 +23,6 @@ export function ResearchStatus({
 }) {
   const { state, dispatch } = useWorkspace();
   const [step, setStep] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const next = nextCachedSnapshot(snapshot.id, PREP_SNAPSHOTS);
   const simulatedAt = state.simulatedResearchRuns[researchKey] ?? null;
   const stale =
@@ -40,11 +39,7 @@ export function ResearchStatus({
   );
 
   async function replay() {
-    setError(null);
-    if (!next) {
-      setError("Replay failed. The stored snapshot is unchanged.");
-      return;
-    }
+    if (!next) return;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (!reduced) {
       for (let index = 0; index < RESEARCH_PROGRESS.length; index += 1) {
@@ -77,11 +72,11 @@ export function ResearchStatus({
         </p>
       ) : null}
       {stale ? <Alert tone="warning">This snapshot is older than 14 days.</Alert> : null}
-      <Button onClick={() => void replay()} disabled={step !== null}>
-        Research again
+      <Button onClick={() => void replay()} disabled={step !== null || !next}>
+        Replay cached update
       </Button>
+      {!next ? <p className="provenance">No newer cached snapshot available.</p> : null}
       {step !== null ? <p className="lede">{RESEARCH_PROGRESS[step]}</p> : null}
-      {error ? <Alert tone="warning">{error}</Alert> : null}
       {diff && (simulatedAt || previous) ? (
         <div>
           <p className="lede">Added, changed, and removed/cancelled evidence from stored snapshots.</p>
