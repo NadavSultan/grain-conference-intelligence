@@ -210,7 +210,7 @@ export interface RelationshipBrief {
 
 export interface StoredCopilotBrief {
   personId: string;
-  mode: "live" | "fallback" | "cached";
+  mode: "live" | "demo" | "fallback" | "cached";
   provider: string;
   model: string;
   generatedAt: string;

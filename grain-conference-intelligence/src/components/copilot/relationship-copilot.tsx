@@ -9,8 +9,11 @@ import { Card } from "@/components/ui/card";
 import { CACHED_MARCUS_BRIEF } from "@/features/copilot/cached-marcus";
 import { ALL_EVIDENCE, PROFILES, type FullProfileId } from "@/data/prep-snapshots";
 import { CONFERENCES } from "@/data/conferences";
+import { useIntegrationStatus } from "@/hooks/use-integration-status";
 import { useWorkspace } from "@/workspace/provider";
 import type { RelationshipBrief, StoredCopilotBrief } from "@/domain/types";
+
+type CopilotNotice = { message: string; settings: boolean };
 
 export function RelationshipCopilot({
   personId,
@@ -22,8 +25,9 @@ export function RelationshipCopilot({
   conferenceId?: string;
 }) {
   const { state, dispatch } = useWorkspace();
+  const integrations = useIntegrationStatus();
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<CopilotNotice | null>(null);
   const stored = state.copilotBriefs[personId];
   const cached: StoredCopilotBrief | null =
     personId === "marcus"
@@ -50,12 +54,13 @@ export function RelationshipCopilot({
 
   async function generate() {
     setBusy(true);
-    setError(null);
+    setNotice(null);
     try {
       const response = await fetch("/api/relationship-brief", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
+          mode: integrations?.mode ?? "demo",
           personId,
           companyId,
           timeline: state.timeline.filter((entry) => entry.personId === personId),
@@ -72,7 +77,7 @@ export function RelationshipCopilot({
       const payload = (await response.json()) as
         | {
             ok: true;
-            mode: "live";
+            mode: "live" | "demo";
             brief: RelationshipBrief;
             provider: string;
             model: string;
@@ -109,10 +114,13 @@ export function RelationshipCopilot({
             brief: payload.fallback,
           },
         });
-        setError(payload.code);
+        setNotice(copilotUserNotice(payload.code));
       }
     } catch {
-      setError("request_failed");
+      setNotice({
+        message: "The brief could not be generated. Showing the safe demo brief.",
+        settings: false,
+      });
     } finally {
       setBusy(false);
     }
@@ -124,13 +132,69 @@ export function RelationshipCopilot({
       <p className="lede">
         Interpret stored evidence only. Opening this page does not call research or AI.
       </p>
-      <Button variant="primary" onClick={() => void generate()} disabled={busy}>
+      <Button variant="primary" onClick={() => void generate()} disabled={busy || !integrations}>
         {busy ? "Generating…" : "Generate relationship brief"}
       </Button>
-      {error ? <Alert tone="warning">Returned {error}. Showing the safe fallback.</Alert> : null}
+      {notice ? (
+        <Alert tone="warning">
+          {notice.message}
+          {notice.settings ? (
+            <>
+              {" "}
+              <Link href="/settings">Open Settings</Link>
+            </>
+          ) : null}
+        </Alert>
+      ) : null}
       {current ? <BriefCard stored={current} personId={personId} conferencePath={conference ? `/conferences/${conference.id}/prep/${personId}` : null} /> : null}
     </Card>
   );
+}
+
+export function copilotUserNotice(code: string): CopilotNotice {
+  switch (code) {
+    case "not_configured":
+    case "missing_key":
+      return {
+        message: "Live AI is not configured. Add an OpenAI API key in Settings.",
+        settings: true,
+      };
+    case "invalid_credentials":
+      return {
+        message: "The configured OpenAI key was rejected. Replace it in Settings.",
+        settings: true,
+      };
+    case "usage_exhausted":
+      return {
+        message: "This browser has used its live AI allowance. Showing the safe demo brief.",
+        settings: false,
+      };
+    case "provider_error":
+      return {
+        message: "OpenAI is temporarily unavailable. Showing the safe demo brief.",
+        settings: false,
+      };
+    case "invalid_request":
+      return {
+        message: "The brief request was invalid. Showing the safe demo brief.",
+        settings: false,
+      };
+    case "invalid_schema":
+      return {
+        message: "Live AI returned an unusable brief. Showing the safe demo brief.",
+        settings: false,
+      };
+    case "unsupported_evidence":
+      return {
+        message: "Live AI cited evidence that is not allowed. Showing the safe demo brief.",
+        settings: false,
+      };
+    default:
+      return {
+        message: "The brief could not be generated. Showing the safe demo brief.",
+        settings: false,
+      };
+  }
 }
 
 function BriefCard({
@@ -145,10 +209,7 @@ function BriefCard({
   const brief = stored.brief;
   return (
     <div>
-      <p className="eyebrow">
-        {stored.mode === "live" ? "Live AI" : stored.mode === "cached" ? "Cached demo example" : "Deterministic fallback"}{" "}
-        · {stored.provider}/{stored.model} · {stored.generatedAt}
-      </p>
+      <p className="eyebrow">{briefModeLabel(stored)}</p>
       <p>
         State {brief.state} · confidence {brief.confidence}
       </p>
@@ -193,6 +254,19 @@ function BriefCard({
       ) : null}
     </div>
   );
+}
+
+function briefModeLabel(stored: StoredCopilotBrief): string {
+  if (stored.mode === "demo") {
+    return "Demo-generated deterministic brief";
+  }
+  if (stored.mode === "live") {
+    return `Live AI · OpenAI · ${stored.model} · ${stored.generatedAt}`;
+  }
+  if (stored.mode === "cached") {
+    return `Cached demo example · ${stored.provider}/${stored.model} · ${stored.generatedAt}`;
+  }
+  return `Deterministic fallback · ${stored.provider}/${stored.model} · ${stored.generatedAt}`;
 }
 
 function EvidenceLinks({
