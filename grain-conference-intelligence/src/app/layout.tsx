@@ -8,8 +8,8 @@ import "./globals.css";
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Grain Conference intelligence",
-  description: "A compact workspace for trusted conference intelligence.",
+  title: "Grain Conference Intelligence",
+  description: "Operational workspace for Grain sales conference planning, prep, capture, and follow-up.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
