@@ -48,11 +48,9 @@ describe("buildConferenceBrief", () => {
       "David Cohen",
       "Marcus Oyelaran",
       "Sam Jones",
-      "edge-changed",
       "Priya Natarajan",
     ]);
     expect(report.priorityContacts.map((contact) => contact.outreachStatus)).toEqual([
-      "to_contact",
       "to_contact",
       "to_contact",
       "to_contact",
@@ -101,7 +99,6 @@ describe("buildConferenceBrief", () => {
       "david",
       "marcus",
       "sam",
-      "edge-changed",
       "priya",
     ]);
     expect(empty.copilot.every((entry) => entry.stored === null)).toBe(true);
@@ -145,6 +142,23 @@ describe("buildConferenceBrief", () => {
     expect(report.plan.owner).toBe("Nadav");
     expect(report.score.q).toBeNull();
     expect(report.score.researchedRoomStatus).toBe("unknown");
+  });
+
+  it("does not export unlabeled edge fixtures or internal IDs as priority contacts", () => {
+    const report = reportFor("money20-europe-2027");
+    const serialized = JSON.stringify(report.priorityContacts);
+
+    expect(report.priorityContacts.map((contact) => contact.personId)).toEqual([
+      "david",
+      "marcus",
+      "sam",
+      "priya",
+    ]);
+    expect(serialized).not.toContain("edge-changed");
+    expect(report.priorityContacts.every((contact) => contact.fictionalLabel === "Fictional demo scenario")).toBe(
+      true,
+    );
+    expect(report.prep.summary?.relevant).toBe(5);
   });
 
   it("returns not_found for unknown conference IDs", () => {

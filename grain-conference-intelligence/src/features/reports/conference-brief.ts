@@ -1,5 +1,5 @@
 import { CONFERENCES } from "@/data/conferences";
-import { PREP_SNAPSHOTS, PROFILES } from "@/data/prep-snapshots";
+import { FULL_PROFILE_IDS, PREP_SNAPSHOTS, PROFILES } from "@/data/prep-snapshots";
 import type {
   AttendanceConfidence,
   CompanyTier,
@@ -96,19 +96,19 @@ export function buildConferenceBrief(
       })
     : [];
   const priorityContacts = snapshot
-    ? sortPrepRecords(records.filter(isRelevant)).map((record) => ({
-        id: record.id,
-        personId: record.personId,
-        name: record.name,
-        outreachStatus: record.prepStatus,
-        companyTier: record.companyTier,
-        attendanceConfidence: record.attendanceConfidence,
-        roleFit: record.roleFit,
-        fictionalLabel:
-          record.personId && record.personId in PROFILES
-            ? PROFILES[record.personId as keyof typeof PROFILES].fictionalLabel
-            : null,
-      }))
+    ? sortPrepRecords(records.filter(isRelevant).filter(hasApprovedProductProfile)).map((record) => {
+        const personId = record.personId as (typeof FULL_PROFILE_IDS)[number];
+        return {
+          id: record.id,
+          personId,
+          name: record.name,
+          outreachStatus: record.prepStatus,
+          companyTier: record.companyTier,
+          attendanceConfidence: record.attendanceConfidence,
+          roleFit: record.roleFit,
+          fictionalLabel: PROFILES[personId].fictionalLabel,
+        };
+      })
     : [];
 
   const conferenceKeys = new Set(
@@ -156,6 +156,10 @@ export function buildConferenceBrief(
       copilot,
     },
   };
+}
+
+function hasApprovedProductProfile(record: { personId: string | null }): boolean {
+  return record.personId !== null && FULL_PROFILE_IDS.includes(record.personId as (typeof FULL_PROFILE_IDS)[number]);
 }
 
 function personName(personId: string, state: WorkspaceStateV1): string {

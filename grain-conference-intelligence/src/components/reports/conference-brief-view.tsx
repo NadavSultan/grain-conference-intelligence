@@ -116,6 +116,12 @@ function ConferenceBriefReportView({ report }: { report: ConferenceBriefReport }
 
       <Card>
         <CardHeader title="Prep summary" />
+        <p
+          data-testid="brief-attendance-clarification"
+          className="provenance brief-attendance-note"
+        >
+          Public signals, including likely attendance; not verified check-ins.
+        </p>
         <div className="kpi-strip">
           <PrepMetric
             testId="brief-prep-verified"

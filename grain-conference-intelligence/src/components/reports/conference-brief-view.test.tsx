@@ -84,12 +84,14 @@ describe("ConferenceBriefView", () => {
     expect(screen.getByText("Need coordination")).toBeInTheDocument();
 
     const contacts = screen.getAllByTestId("brief-priority-contact").map((node) => node.textContent);
+    expect(contacts).toHaveLength(4);
     expect(contacts[0]).toContain("David Cohen");
     expect(contacts[1]).toContain("Marcus Oyelaran");
     expect(contacts[2]).toContain("Sam Jones");
-    expect(contacts[3]).toContain("edge-changed");
-    expect(contacts[4]).toContain("Priya Natarajan");
+    expect(contacts[3]).toContain("Priya Natarajan");
     expect(contacts.join(" ")).toMatch(/To contact/i);
+    expect(contacts.join(" ")).not.toContain("edge-changed");
+    expect(contacts.every((text) => text?.includes("Fictional demo scenario"))).toBe(true);
 
     expect(screen.getAllByText("Marcus Oyelaran").length).toBeGreaterThan(0);
     expect(
@@ -163,6 +165,14 @@ describe("ConferenceBriefView", () => {
     const { container } = render(<ConferenceBriefView conferenceId="money20-europe-2027" />);
     expect(container.querySelector(".report-actions")).toHaveClass("no-print");
   });
+
+  it("keeps the attendance clarification beside Prep summary and visible in print", () => {
+    render(<ConferenceBriefView conferenceId="money20-europe-2027" />);
+    const note = screen.getByTestId("brief-attendance-clarification");
+    expect(note).toHaveTextContent("Public signals, including likely attendance; not verified check-ins.");
+    expect(note).not.toHaveClass("no-print");
+    expect(note.closest(".no-print, .report-actions, .brief-toolbar, .page-header-actions")).toBeNull();
+  });
 });
 
 describe("Export brief entry point", () => {
@@ -198,5 +208,13 @@ describe("print stylesheet", () => {
     expect(css).toMatch(/\.report-actions/);
     expect(css).toMatch(/\.no-print/);
     expect(css).toMatch(/size:\s*A4/);
+  });
+
+  it("does not hide the attendance clarification in print CSS", () => {
+    const css = readFileSync(path.join(process.cwd(), "src/app/globals.css"), "utf8");
+    const printBlock = css.split("@media print")[1] ?? "";
+    expect(printBlock).toMatch(/\.no-print/);
+    expect(printBlock).not.toMatch(/brief-attendance-clarification/);
+    expect(printBlock).not.toMatch(/brief-attendance-note/);
   });
 });
