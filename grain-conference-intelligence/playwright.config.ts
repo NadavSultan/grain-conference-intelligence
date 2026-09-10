@@ -7,13 +7,15 @@ export default defineConfig({
   retries: 0,
   reporter: "list",
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: "http://127.0.0.1:3000",
     trace: "retain-on-failure",
   },
   webServer: {
-    command: "corepack pnpm dev",
-    url: "http://localhost:3000",
+    command: "node scripts/e2e-web-server.mjs",
+    url: "http://127.0.0.1:3000",
     reuseExistingServer: false,
     timeout: 120_000,
+    stdout: "pipe",
+    stderr: "pipe",
   },
 });
