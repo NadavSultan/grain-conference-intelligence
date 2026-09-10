@@ -1,34 +1,154 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+
+export type CredentialSource = "session" | "deployment" | "none";
+export type IntegrationMode = "demo" | "live";
 
 export type IntegrationStatus = {
-  liveConfigured: boolean;
+  configured: boolean;
+  source: CredentialSource;
   model: string;
+  liveConfigured: boolean;
 };
 
-const IntegrationStatusContext = createContext<IntegrationStatus | null>(null);
+export type IntegrationClient = IntegrationStatus & {
+  status: IntegrationStatus;
+  mode: IntegrationMode;
+  configure: (apiKey: string) => Promise<boolean>;
+  remove: () => Promise<void>;
+  setMode: (mode: IntegrationMode) => void;
+};
+
+const MODE_STORAGE_KEY = "grain-openai-mode";
+
+type ContextValue = {
+  status: IntegrationStatus | null;
+  mode: IntegrationMode;
+  configure: (apiKey: string) => Promise<boolean>;
+  remove: () => Promise<void>;
+  setMode: (mode: IntegrationMode) => void;
+};
+
+const IntegrationStatusContext = createContext<ContextValue | null>(null);
+
+function readStoredMode(): IntegrationMode {
+  try {
+    return sessionStorage.getItem(MODE_STORAGE_KEY) === "live" ? "live" : "demo";
+  } catch {
+    return "demo";
+  }
+}
+
+function writeStoredMode(mode: IntegrationMode) {
+  try {
+    sessionStorage.setItem(MODE_STORAGE_KEY, mode);
+  } catch {
+    // Private mode or quota failures should not persist the API key anywhere else.
+  }
+}
+
+function toStatus(payload: { configured?: boolean; source?: string; model?: string }): IntegrationStatus {
+  const source: CredentialSource =
+    payload.source === "session" || payload.source === "deployment" ? payload.source : "none";
+  const configured = Boolean(payload.configured);
+  return {
+    configured,
+    source,
+    model: payload.model ?? "gpt-5.4-mini",
+    liveConfigured: configured,
+  };
+}
 
 export function IntegrationStatusProvider({ children }: { children: ReactNode }) {
-  const [live, setLive] = useState<IntegrationStatus | null>(null);
+  const [status, setStatus] = useState<IntegrationStatus | null>(null);
+  const [mode, setModeState] = useState<IntegrationMode>("demo");
 
-  useEffect(() => {
-    void fetch("/api/relationship-brief")
-      .then((response) => response.json())
-      .then((payload) =>
-        setLive({
-          liveConfigured: Boolean(payload.liveConfigured),
-          model: payload.model ?? "gpt-5.4-mini",
-        }),
-      )
-      .catch(() => setLive({ liveConfigured: false, model: "gpt-5.4-mini" }));
+  const refresh = useCallback(async () => {
+    try {
+      const response = await fetch("/api/integrations/openai");
+      const payload = (await response.json()) as {
+        configured?: boolean;
+        source?: string;
+        model?: string;
+      };
+      setStatus(toStatus(payload));
+      return toStatus(payload);
+    } catch {
+      const fallback = toStatus({ configured: false, source: "none" });
+      setStatus(fallback);
+      return fallback;
+    }
   }, []);
 
+  useEffect(() => {
+    void fetch("/api/integrations/openai")
+      .then((response) => response.json())
+      .then((payload: { configured?: boolean; source?: string; model?: string }) => {
+        setStatus(toStatus(payload));
+        setModeState(readStoredMode());
+      })
+      .catch(() => setStatus(toStatus({ configured: false, source: "none" })));
+  }, []);
+
+  const setMode = useCallback((next: IntegrationMode) => {
+    setModeState(next);
+    writeStoredMode(next);
+  }, []);
+
+  const configure = useCallback(
+    async (apiKey: string) => {
+      const response = await fetch("/api/integrations/openai", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ apiKey }),
+      });
+      if (!response.ok) return false;
+      const payload = (await response.json()) as {
+        configured?: boolean;
+        source?: string;
+        model?: string;
+      };
+      setStatus(toStatus(payload));
+      setMode("live");
+      return true;
+    },
+    [setMode],
+  );
+
+  const remove = useCallback(async () => {
+    await fetch("/api/integrations/openai", { method: "DELETE" });
+    await refresh();
+    setMode("demo");
+  }, [refresh, setMode]);
+
+  const value = useMemo<ContextValue>(
+    () => ({ status, mode, configure, remove, setMode }),
+    [status, mode, configure, remove, setMode],
+  );
+
   return (
-    <IntegrationStatusContext.Provider value={live}>{children}</IntegrationStatusContext.Provider>
+    <IntegrationStatusContext.Provider value={value}>{children}</IntegrationStatusContext.Provider>
   );
 }
 
-export function useIntegrationStatus(): IntegrationStatus | null {
-  return useContext(IntegrationStatusContext);
+export function useIntegrationStatus(): IntegrationClient | null {
+  const context = useContext(IntegrationStatusContext);
+  if (!context?.status) return null;
+  return {
+    ...context.status,
+    status: context.status,
+    mode: context.mode,
+    configure: context.configure,
+    remove: context.remove,
+    setMode: context.setMode,
+  };
 }

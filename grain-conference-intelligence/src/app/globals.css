@@ -1254,7 +1254,8 @@ h1 {
   .focus-grid,
   .profile-workspace,
   .detail-workspace,
-  .planning-callouts {
+  .planning-callouts,
+  .settings-side-cards {
     grid-template-columns: 1fr;
     flex-direction: column;
   }
@@ -1537,6 +1538,34 @@ h1 {
   font-size: var(--text-sm);
 }
 
+.settings-openai-card {
+  gap: 12px;
+}
+
+.settings-mode-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.settings-secret-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 36rem;
+}
+
+.settings-security-copy {
+  color: var(--secondary);
+  font-size: var(--text-sm);
+}
+
+.settings-side-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .planning-callouts {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1548,6 +1577,7 @@ h1 {
   .detail-workspace,
   .score-hero,
   .planning-callouts,
+  .settings-side-cards,
   .focus-grid {
     grid-template-columns: 1fr;
   }
