@@ -1,12 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { ExternalLink } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
 import { PlanControls } from "@/components/conferences/plan-controls";
 import { ScorePanel, useRecordOriginalScore } from "@/components/conferences/score-panel";
 import { PrepList } from "@/components/prep/prep-list";
 import { ResearchStatus } from "@/components/prep/research-status";
+import { Alert } from "@/components/ui/alert";
+import { Badge, decisionTone, humanizeToken, tierTone } from "@/components/ui/badge";
+import { buttonClassName } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { audienceSizeLabel, CONFERENCES } from "@/data/conferences";
 import { PREP_SNAPSHOTS } from "@/data/prep-snapshots";
 import { getConferencePlan } from "@/features/conferences/planning";
@@ -42,47 +48,82 @@ export function ConferenceDetail({ conferenceId }: { conferenceId: string }) {
     );
   }
 
+  const recommendation = recommendDecision(score.tier);
+
   return (
     <section className="page-stack" aria-labelledby="conference-title">
-      <div>
-        <p className="eyebrow">
-          {conference.startDate} – {conference.endDate} · {conference.geography} · {conference.vertical}
-        </p>
-        <h1 id="conference-title">{conference.name}</h1>
-        <p className="lede">{conference.location}</p>
-        <p className="provenance">
-          <a href={conference.sourceUrl} target="_blank" rel="noreferrer">
+      <PageHeader
+        breadcrumbs={[
+          { href: "/conferences", label: "Conferences" },
+          { label: conference.name },
+        ]}
+        title={conference.name}
+        titleId="conference-title"
+        description={`${conference.startDate} – ${conference.endDate} · ${conference.geography} · ${conference.vertical}`}
+        actions={
+          <a
+            href={conference.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className={buttonClassName("secondary")}
+          >
             Official source
+            <ExternalLink size={14} aria-hidden="true" />
           </a>
-          {" · verified "}
-          {conference.verifiedAt}
-        </p>
-      </div>
-      <div className="tabs" role="tablist" aria-label="Conference sections">
-        <Link
-          href={`/conferences/${conference.id}`}
-          className={tab === "overview" ? "chip chip-active" : "chip"}
-          role="tab"
-          aria-selected={tab === "overview"}
-        >
-          Overview
-        </Link>
-        <Link
-          href={`/conferences/${conference.id}?tab=prep`}
-          className={tab === "prep" ? "chip chip-active" : "chip"}
-          role="tab"
-          aria-selected={tab === "prep"}
-        >
-          Prep
-        </Link>
+        }
+        tabs={
+          <div className="sticky-tabs" role="tablist" aria-label="Conference sections">
+            <Link
+              href={`/conferences/${conference.id}`}
+              className={tab === "overview" ? "tab-link tab-link-active" : "tab-link"}
+              role="tab"
+              aria-selected={tab === "overview"}
+            >
+              Overview
+            </Link>
+            <Link
+              href={`/conferences/${conference.id}?tab=prep`}
+              className={tab === "prep" ? "tab-link tab-link-active" : "tab-link"}
+              role="tab"
+              aria-selected={tab === "prep"}
+            >
+              Prep
+            </Link>
+          </div>
+        }
+      />
+      <div className="event-header">
+        <div>
+          <div className="badge-row">
+            <Badge tone={tierTone(score.tier)}>Tier {score.tier}</Badge>
+            <Badge tone={decisionTone(plan.decision)}>{humanizeToken(plan.decision)}</Badge>
+            <Badge tone="blue">{conference.geography}</Badge>
+            <Badge>{conference.vertical}</Badge>
+          </div>
+          <p className="lede">{conference.location}</p>
+          <p className="provenance">
+            <a href={conference.sourceUrl} target="_blank" rel="noreferrer">
+              Official source
+            </a>
+            {" · verified "}
+            {conference.verifiedAt}
+          </p>
+        </div>
+        <div className="event-score">
+          <p className="metric-label">Recommendation score</p>
+          <p className="score-number">{score.total}</p>
+          <p>
+            Tier {score.tier} · {recommendation}
+          </p>
+        </div>
       </div>
       {tab === "overview" ? (
         <>
           {original && original.snapshotId !== score.snapshotId ? (
-            <p className="coverage-warning">
+            <Alert>
               Original snapshot {original.snapshotId ?? "none"} scored {original.total} (Tier {original.tier})
               and remains stored. The current view uses the active snapshot without replacing that original.
-            </p>
+            </Alert>
           ) : null}
           <ScorePanel
             score={score}
@@ -91,7 +132,7 @@ export function ConferenceDetail({ conferenceId }: { conferenceId: string }) {
           />
           <PlanControls
             plan={plan}
-            recommendation={recommendDecision(score.tier)}
+            recommendation={recommendation}
             onDecision={(next) =>
               dispatch({ type: "plan/set-decision", conferenceId: conference.id, decision: next })
             }
@@ -123,7 +164,7 @@ export function ConferenceDetail({ conferenceId }: { conferenceId: string }) {
           />
         </>
       ) : (
-        <p className="empty">No cached Prep snapshot exists for this event. Opening this tab does not start research.</p>
+        <EmptyState title="No cached Prep snapshot exists for this event. Opening this tab does not start research." />
       )}
     </section>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import type { ConferencePlan, PlanDecision } from "@/domain/types";
 
 const DECISIONS: PlanDecision[] = ["attend", "watch", "skip", "undecided"];
@@ -21,14 +22,14 @@ export function PlanControls({
       <p className="lede">Suggested from the current snapshot: {recommendation}. Your saved choice stays until you change it.</p>
       <div className="decision-row" role="group" aria-label="Attend, watch, or skip">
         {DECISIONS.map((decision) => (
-          <button
+          <Button
             key={decision}
-            type="button"
             className={plan.decision === decision ? "chip chip-active" : "chip"}
+            variant={plan.decision === decision ? "primary" : "secondary"}
             onClick={() => onDecision(decision)}
           >
             {decision.replace("_", " ")}
-          </button>
+          </Button>
         ))}
       </div>
       <label className="field-label">

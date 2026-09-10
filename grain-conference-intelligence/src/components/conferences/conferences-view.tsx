@@ -1,8 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { Badge, decisionTone, humanizeToken, tierTone } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
+import { ResponsiveSection, StackList, Table, Td, Th } from "@/components/ui/table";
+import { Toolbar } from "@/components/ui/toolbar";
 import { audienceSizeLabel, CONFERENCES } from "@/data/conferences";
 import { PREP_SNAPSHOTS } from "@/data/prep-snapshots";
 import { getConferencePlan } from "@/features/conferences/planning";
@@ -51,17 +56,19 @@ export function ConferencesView() {
 
   return (
     <section className="page-stack" aria-labelledby="conferences-title">
-      <div>
-        <p className="eyebrow">Conference discovery</p>
-        <h1 id="conferences-title">Twelve sourced events</h1>
-        <p className="lede">
-          Scores are snapshot-labelled. Audience size is context only. Unknown research stays Unknown.
-        </p>
-      </div>
-      <form className="filter-bar" onSubmit={(event) => event.preventDefault()}>
+      <PageHeader
+        eyebrow="Conference discovery"
+        title="Conferences"
+        titleId="conferences-title"
+        description="Scores are snapshot-labelled. Audience size is context only. Unknown research stays Unknown."
+      />
+      <Toolbar>
         <label className="field-label">
           Search
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name or city" />
+          <span className="toolbar-search">
+            <Search size={16} aria-hidden="true" />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name or city" />
+          </span>
         </label>
         <label className="field-label">
           Month
@@ -115,34 +122,76 @@ export function ConferencesView() {
             <option value="undecided">Undecided</option>
           </select>
         </label>
-      </form>
-      <ul className="conference-list">
-        {rows.map(({ conference, score, plan }) => (
-          <li key={conference.id}>
-            <article className="conference-card">
-              <div>
-                <p className="eyebrow">
-                  {conference.startDate} – {conference.endDate} · {conference.geography}
-                </p>
-                <h2>
-                  <Link href={`/conferences/${conference.id}`}>{conference.name}</Link>
-                </h2>
-                <p>
-                  {conference.location} · {conference.vertical}
-                </p>
-                <p className="provenance">
-                  Audience {audienceSizeLabel(conference)} · Q{" "}
-                  {score.q === null ? "Unknown" : score.q} · {plan.decision}
-                  {plan.owner ? ` · ${plan.owner}` : ""}
-                </p>
-              </div>
-              <div className="tier-badge" data-tier={score.tier}>
-                {score.total} · Tier {score.tier}
-              </div>
-            </article>
-          </li>
-        ))}
-      </ul>
+      </Toolbar>
+      <ResponsiveSection
+        desktop={
+          <Table>
+            <thead>
+              <tr>
+                <Th>Name</Th>
+                <Th>Dates</Th>
+                <Th>Location</Th>
+                <Th>Score</Th>
+                <Th>Tier</Th>
+                <Th>Plan</Th>
+                <Th>Q</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(({ conference, score, plan }) => (
+                <tr key={conference.id}>
+                  <Td>
+                    <Link href={`/conferences/${conference.id}`}>{conference.name}</Link>
+                    <p className="provenance">{conference.vertical}</p>
+                  </Td>
+                  <Td>
+                    {conference.startDate} – {conference.endDate}
+                  </Td>
+                  <Td>{conference.location}</Td>
+                  <Td>{score.total}</Td>
+                  <Td>
+                    <Badge tone={tierTone(score.tier)}>Tier {score.tier}</Badge>
+                  </Td>
+                  <Td>
+                    <Badge tone={decisionTone(plan.decision)}>{humanizeToken(plan.decision)}</Badge>
+                    {plan.owner ? <p className="provenance">{plan.owner}</p> : null}
+                  </Td>
+                  <Td>{score.q === null ? "Unknown" : score.q}</Td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        }
+        mobile={
+          <StackList className="conference-list">
+            {rows.map(({ conference, score, plan }) => (
+              <li key={conference.id}>
+                <article className="conference-card">
+                  <div>
+                    <p className="eyebrow">
+                      {conference.startDate} – {conference.endDate} · {conference.geography}
+                    </p>
+                    <h2>
+                      <Link href={`/conferences/${conference.id}`}>{conference.name}</Link>
+                    </h2>
+                    <p>
+                      {conference.location} · {conference.vertical}
+                    </p>
+                    <p className="provenance">
+                      Audience {audienceSizeLabel(conference)} · Q{" "}
+                      {score.q === null ? "Unknown" : score.q} · {humanizeToken(plan.decision)}
+                      {plan.owner ? ` · ${plan.owner}` : ""}
+                    </p>
+                  </div>
+                  <Badge tone={tierTone(score.tier)}>
+                    {score.total} · Tier {score.tier}
+                  </Badge>
+                </article>
+              </li>
+            ))}
+          </StackList>
+        }
+      />
     </section>
   );
 }

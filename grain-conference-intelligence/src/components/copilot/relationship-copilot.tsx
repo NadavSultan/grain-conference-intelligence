@@ -3,6 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 
+import { Alert } from "@/components/ui/alert";
+import { Button, buttonClassName } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { CACHED_MARCUS_BRIEF } from "@/features/copilot/cached-marcus";
 import { ALL_EVIDENCE, PROFILES, type FullProfileId } from "@/data/prep-snapshots";
 import { CONFERENCES } from "@/data/conferences";
@@ -116,17 +119,17 @@ export function RelationshipCopilot({
   }
 
   return (
-    <section className="workspace-card compact" aria-labelledby={`copilot-${personId}`}>
+    <Card className="compact" aria-labelledby={`copilot-${personId}`}>
       <h2 id={`copilot-${personId}`}>Relationship Copilot</h2>
       <p className="lede">
         Interpret stored evidence only. Opening this page does not call research or AI.
       </p>
-      <button type="button" className="chip chip-active" onClick={() => void generate()} disabled={busy}>
+      <Button variant="primary" onClick={() => void generate()} disabled={busy}>
         {busy ? "Generating…" : "Generate relationship brief"}
-      </button>
-      {error ? <p className="demo-warning">Returned {error}. Showing the safe fallback.</p> : null}
+      </Button>
+      {error ? <Alert tone="warning">Returned {error}. Showing the safe fallback.</Alert> : null}
       {current ? <BriefCard stored={current} personId={personId} conferencePath={conference ? `/conferences/${conference.id}/prep/${personId}` : null} /> : null}
-    </section>
+    </Card>
   );
 }
 
@@ -215,7 +218,7 @@ function EvidenceLinks({
             ? `${conferencePath}#${id}`
             : `#${id}`;
         return (
-          <Link key={id} href={href} className="chip">
+          <Link key={id} href={href} className={buttonClassName("ghost", "sm")}>
             {id}
           </Link>
         );

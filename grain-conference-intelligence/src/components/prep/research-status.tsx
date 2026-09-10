@@ -2,6 +2,10 @@
 
 import { useMemo, useState } from "react";
 
+import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import type { PrepSnapshot } from "@/domain/types";
 import { PREP_SNAPSHOTS } from "@/data/prep-snapshots";
 import { RESEARCH_PROGRESS } from "@/features/prep/actions";
@@ -60,7 +64,11 @@ export function ResearchStatus({
   const diff = previous ? diffSnapshots(previous.records, snapshot.records) : null;
 
   return (
-    <section className="workspace-card compact">
+    <Card className="compact">
+      <div className="badge-row">
+        <Badge tone="info">Cached</Badge>
+        {simulatedAt ? <Badge tone="warning">Simulated</Badge> : null}
+      </div>
       <h2>Research status</h2>
       <p className="provenance">Last researched {snapshot.researchedAt}</p>
       {simulatedAt ? (
@@ -68,12 +76,12 @@ export function ResearchStatus({
           Simulated replay {simulatedAt}. Stored research time remains {snapshot.researchedAt}.
         </p>
       ) : null}
-      {stale ? <p className="demo-warning">This snapshot is older than 14 days.</p> : null}
-      <button type="button" className="chip" onClick={() => void replay()} disabled={step !== null}>
+      {stale ? <Alert tone="warning">This snapshot is older than 14 days.</Alert> : null}
+      <Button onClick={() => void replay()} disabled={step !== null}>
         Research again
-      </button>
+      </Button>
       {step !== null ? <p className="lede">{RESEARCH_PROGRESS[step]}</p> : null}
-      {error ? <p className="demo-warning">{error}</p> : null}
+      {error ? <Alert tone="warning">{error}</Alert> : null}
       {diff && (simulatedAt || previous) ? (
         <div>
           <p className="lede">Added, changed, and removed/cancelled evidence from stored snapshots.</p>
@@ -82,6 +90,6 @@ export function ResearchStatus({
           <p>Removed/cancelled: {diff.removedOrCancelled.join(", ") || "none"}</p>
         </div>
       ) : null}
-    </section>
+    </Card>
   );
 }

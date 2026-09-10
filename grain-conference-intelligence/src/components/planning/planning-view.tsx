@@ -3,6 +3,11 @@
 import Link from "next/link";
 import { useMemo } from "react";
 
+import { Alert } from "@/components/ui/alert";
+import { Badge, decisionTone, humanizeToken, tierTone } from "@/components/ui/badge";
+import { buttonClassName } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { CONFERENCES } from "@/data/conferences";
 import { PREP_SNAPSHOTS } from "@/data/prep-snapshots";
 import {
@@ -62,34 +67,37 @@ export function PlanningView() {
 
   return (
     <section className="page-stack" aria-labelledby="planning-title">
-      <div>
-        <p className="eyebrow">Annual coverage</p>
-        <h1 id="planning-title">Year list</h1>
-        <p className="lede">
-          Monthly grouping with owner, status, conflicts, same-city clusters, uncovered
-          quarters, and Q linked to the same Prep records.
-        </p>
-      </div>
-      <div className="status-row">
-        <p>
-          <strong>Conflicts:</strong>{" "}
-          {conflicts.length === 0
-            ? "None"
-            : conflicts
-                .map((conflict) => `${conflict.owner} (${conflict.conferenceIds.join(", ")})`)
-                .join("; ")}
-        </p>
-        <p>
-          <strong>Trip clusters:</strong>{" "}
-          {clusters.length === 0
-            ? "None"
-            : clusters
-                .map((cluster) => `${cluster.city} (${cluster.conferenceIds.join(", ")})`)
-                .join("; ")}
-        </p>
-        <p>
-          <strong>Uncovered quarters:</strong> {uncovered.join(", ")}
-        </p>
+      <PageHeader
+        eyebrow="Annual coverage"
+        title="Year list"
+        titleId="planning-title"
+        description="Monthly grouping with owner, status, conflicts, same-city clusters, uncovered quarters, and Q linked to the same Prep records."
+      />
+      <div className="planning-callouts">
+        <Card>
+          <h2>Conflicts</h2>
+          <p>
+            {conflicts.length === 0
+              ? "None"
+              : conflicts
+                  .map((conflict) => `${conflict.owner} (${conflict.conferenceIds.join(", ")})`)
+                  .join("; ")}
+          </p>
+        </Card>
+        <Card>
+          <h2>Trip clusters</h2>
+          <p>
+            {clusters.length === 0
+              ? "None"
+              : clusters
+                  .map((cluster) => `${cluster.city} (${cluster.conferenceIds.join(", ")})`)
+                  .join("; ")}
+          </p>
+        </Card>
+        <Card>
+          <h2>Uncovered quarters</h2>
+          <p>Uncovered quarters: {uncovered.join(", ")}</p>
+        </Card>
       </div>
       {Object.entries(grouped).map(([month, conferences]) => (
         <section key={month} className="month-group">
@@ -130,19 +138,22 @@ export function PlanningView() {
                         {score.researchedAt ? ` · researched ${score.researchedAt}` : " · research Unknown"}
                       </p>
                       {conflict ? (
-                        <p className="demo-warning">Conflict for {conflict.owner}</p>
+                        <Alert tone="warning">Conflict for {conflict.owner}</Alert>
                       ) : null}
                       {cluster ? (
-                        <p className="coverage-warning">Trip cluster: {cluster.city}</p>
+                        <Alert>Trip cluster: {cluster.city}</Alert>
                       ) : null}
                       <p>
-                        <Link href={prepHref}>
+                        <Link href={prepHref} className={buttonClassName("ghost", "sm")}>
                           {snapshot ? "Open Prep" : "Overview"}
                         </Link>
                       </p>
                     </div>
-                    <div className="tier-badge" data-tier={score.tier}>
-                      {score.total} · Tier {score.tier}
+                    <div className="badge-row">
+                      <Badge tone={decisionTone(plan.decision)}>{humanizeToken(plan.decision)}</Badge>
+                      <Badge tone={tierTone(score.tier)}>
+                        {score.total} · Tier {score.tier}
+                      </Badge>
                     </div>
                   </article>
                 </li>

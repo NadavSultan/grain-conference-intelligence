@@ -2,6 +2,10 @@
 
 import { useMemo, useState } from "react";
 
+import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button, ButtonRow } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { buildCrmPreview } from "@/features/crm/preview";
 import { runDemoSync } from "@/features/crm/demo-sync";
 import { useWorkspace } from "@/workspace/provider";
@@ -64,16 +68,17 @@ export function SyncPreview({
   }
 
   return (
-    <section className="workspace-card compact">
+    <Card className="compact">
+      <div className="badge-row">
+        <Badge tone="warning">Simulated</Badge>
+      </div>
       <h2>HubSpot (demo)</h2>
       <p>
         {demoRecord?.contactStep.id
           ? `View in HubSpot (demo record) ${demoRecord.contactStep.id}`
           : preview?.crmLabel ?? "Unknown"}
       </p>
-      <button type="button" className="chip" onClick={() => setOpen(true)}>
-        Open CRM preview
-      </button>
+      <Button onClick={() => setOpen(true)}>Open CRM preview</Button>
       {open && preview ? (
         <div>
           <p className="eyebrow">Readable payload preview</p>
@@ -85,29 +90,29 @@ export function SyncPreview({
           <p>Conference: {preview.conferenceContext}</p>
           <p>Fields to write: {Object.entries(preview.fieldsToWrite).map(([key, value]) => `${key}=${value}`).join("; ")}</p>
           <p>Protected (not written): {preview.protectedFields.join(", ")}</p>
-          {preview.blockedReason ? <p className="demo-warning">{preview.blockedReason}</p> : null}
-          <button type="button" className="chip chip-active" onClick={sync} disabled={!preview.canSync}>
-            Run demo sync
-          </button>
-          <button
-            type="button"
-            className="chip"
-            onClick={() => {
-              const { result } = runDemoSync(state, {
-                contactId,
-                sourceKind,
-                sourceId,
-                crmState,
-                identityKind,
-                conferenceName,
-                simulateNoteFailure: true,
-              });
-              dispatch({ type: "crm/record", record: result });
-            }}
-            disabled={!preview.canSync}
-          >
-            Simulate note failure
-          </button>
+          {preview.blockedReason ? <Alert tone="warning">{preview.blockedReason}</Alert> : null}
+          <ButtonRow>
+            <Button variant="primary" onClick={sync} disabled={!preview.canSync}>
+              Run demo sync
+            </Button>
+            <Button
+              onClick={() => {
+                const { result } = runDemoSync(state, {
+                  contactId,
+                  sourceKind,
+                  sourceId,
+                  crmState,
+                  identityKind,
+                  conferenceName,
+                  simulateNoteFailure: true,
+                });
+                dispatch({ type: "crm/record", record: result });
+              }}
+              disabled={!preview.canSync}
+            >
+              Simulate note failure
+            </Button>
+          </ButtonRow>
           {simulation ? (
             <p>
               Contact step {simulation.contactStep.status} {simulation.contactStep.id ?? ""} · Note
@@ -117,6 +122,6 @@ export function SyncPreview({
           <p className="provenance">Demo mode only. No network request and no live HubSpot write.</p>
         </div>
       ) : null}
-    </section>
+    </Card>
   );
 }

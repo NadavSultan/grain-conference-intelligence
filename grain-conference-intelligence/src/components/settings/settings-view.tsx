@@ -1,43 +1,54 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { useIntegrationStatus } from "@/hooks/use-integration-status";
 import { useWorkspace } from "@/workspace/provider";
 
 export function SettingsView() {
   const { resetWorkspace } = useWorkspace();
-  const [live, setLive] = useState<{ liveConfigured: boolean; model: string } | null>(null);
-
-  useEffect(() => {
-    void fetch("/api/relationship-brief")
-      .then((response) => response.json())
-      .then((payload) =>
-        setLive({
-          liveConfigured: Boolean(payload.liveConfigured),
-          model: payload.model ?? "gpt-5.4-mini",
-        }),
-      )
-      .catch(() => setLive({ liveConfigured: false, model: "gpt-5.4-mini" }));
-  }, []);
+  const live = useIntegrationStatus();
+  const liveReady = Boolean(live?.liveConfigured);
 
   return (
     <section className="page-stack" aria-labelledby="settings-title">
-      <p className="eyebrow">Workspace</p>
-      <h1 id="settings-title">Settings</h1>
-      <p className="lede">
-        Demo is the default. Secrets are never entered in the browser. Opening pages does not start
-        research or AI.
-      </p>
-      <section className="workspace-card compact">
-        <h2>Mode</h2>
-        <p>Demo (default). Fictional fixtures stay locked to Demo mode.</p>
-        <p>
-          OpenAI live: {live?.liveConfigured ? `Available on the server · ${live.model}` : "Not configured in this environment"}
-          . Remaining allowance is reported after an explicit Copilot call (five calls per anonymous browser).
-        </p>
-        <p>HubSpot live: Not included in P0.</p>
-      </section>
-      <section className="workspace-card compact">
+      <PageHeader
+        eyebrow="Workspace"
+        title="Settings"
+        titleId="settings-title"
+        description="Demo is the default. Secrets are never entered in the browser. Opening pages does not start research or AI."
+      />
+      <div className="planning-callouts">
+        <Card>
+          <div className="badge-row">
+            <Badge tone="info">Demo</Badge>
+          </div>
+          <h2>Mode</h2>
+          <p>Demo (default). Fictional fixtures stay locked to Demo mode.</p>
+        </Card>
+        <Card>
+          <div className="badge-row">
+            <Badge tone={liveReady ? "success" : "neutral"}>
+              {liveReady ? "Live AI" : "Not configured"}
+            </Badge>
+          </div>
+          <h2>OpenAI</h2>
+          <p>
+            OpenAI live: {live?.liveConfigured ? `Available on the server · ${live.model}` : "Not configured in this environment"}
+            . Remaining allowance is reported after an explicit Copilot call (five calls per anonymous browser).
+          </p>
+        </Card>
+        <Card>
+          <div className="badge-row">
+            <Badge tone="warning">Simulated</Badge>
+          </div>
+          <h2>HubSpot</h2>
+          <p>HubSpot live: Not included in P0.</p>
+        </Card>
+      </div>
+      <Card>
         <h2>What is seeded, simulated, or live</h2>
         <ul>
           <li>Conference scores and Prep lists replay stored snapshots. They do not run live research.</li>
@@ -46,10 +57,8 @@ export function SettingsView() {
           <li>HubSpot is a persisted local simulation. No application action sends email, LinkedIn, Slack, or a real HubSpot write.</li>
           <li>Workspace state is stored in this browser under grain-conference-intelligence:v1 and survives reload.</li>
         </ul>
-      </section>
-      <button type="button" className="chip" onClick={resetWorkspace}>
-        Reset demo workspace
-      </button>
+      </Card>
+      <Button onClick={resetWorkspace}>Reset demo workspace</Button>
     </section>
   );
 }

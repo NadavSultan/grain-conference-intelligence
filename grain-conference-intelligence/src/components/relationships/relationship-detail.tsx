@@ -5,6 +5,10 @@ import Link from "next/link";
 import { CONFERENCES } from "@/data/conferences";
 import { RelationshipCopilot } from "@/components/copilot/relationship-copilot";
 import { SyncPreview } from "@/components/crm/sync-preview";
+import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { buttonClassName } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { deriveRelationshipEligibility } from "@/features/relationships/eligibility";
 import { useWorkspace } from "@/workspace/provider";
 import type { TimelineKind } from "@/domain/types";
@@ -46,94 +50,113 @@ export function RelationshipDetail({ contactId }: { contactId: string }) {
 
   return (
     <section className="page-stack" aria-labelledby="contact-title">
-      <p className="eyebrow">{eligibility.state} · {eligibility.encounterCount} actual meetings</p>
-      <h1 id="contact-title">{contact.name}</h1>
-      <p className="lede">
-        {contact.role} · {contact.company}
-      </p>
-      <Link href="/relationships">All relationships</Link>
+      <PageHeader
+        eyebrow={`${eligibility.state} · ${eligibility.encounterCount} actual meetings`}
+        title={contact.name}
+        titleId="contact-title"
+        description={`${contact.role} · ${contact.company}`}
+        breadcrumbs={[
+          { href: "/relationships", label: "Relationships" },
+          { label: contact.name },
+        ]}
+        actions={
+          <Link href="/relationships" className={buttonClassName("ghost", "sm")}>
+            All relationships
+          </Link>
+        }
+      />
       {eligibility.counterEvidence.map((item) => (
-        <p key={item} className="coverage-warning">
+        <Alert key={item} tone="warning">
           {item}
-        </p>
+        </Alert>
       ))}
-      <ul className="conference-list">
-        {planned.map((meeting) => {
-          const conference =
-            CONFERENCES.find((item) => item.id === meeting.conferenceId) ??
-            CONFERENCES.find((item) => item.demoScenarioId === meeting.conferenceId);
-          return (
-            <li key={meeting.id}>
-              <article className="conference-card">
-                <div>
-                  <p className="eyebrow">Planned meeting · {meeting.outcome}</p>
-                  <p>{meeting.context}</p>
-                  <p className="provenance">
-                    {conference ? (
-                      <Link href={`/conferences/${conference.id}`}>{conference.name}</Link>
-                    ) : (
-                      meeting.conferenceId
-                    )}
-                    {" · "}
-                    {meeting.scheduledFor}
-                  </p>
-                </div>
-              </article>
-            </li>
-          );
-        })}
-        {entries.map((entry) => {
-          const conference =
-            CONFERENCES.find((item) => item.id === entry.conferenceId) ??
-            CONFERENCES.find((item) => item.demoScenarioId === entry.conferenceId);
-          return (
-            <li key={entry.id} id={entry.id}>
-              <article className="conference-card">
-                <div>
-                  <p className="eyebrow">
-                    {LABELS[entry.kind]}
-                    {entry.kind === "actual_encounter"
-                      ? ` · Encounter ${encounterOrdinalById.get(entry.id)}`
-                      : ""}
-                  </p>
-                  <p>{entry.summary}</p>
-                  <p>
-                    {entry.company} · {entry.role}
-                    {entry.nextStep ? ` · Next: ${entry.nextStep}` : ""}
-                  </p>
-                  <p className="provenance">
-                    {conference ? (
-                      <Link href={`/conferences/${conference.id}`}>{conference.name}</Link>
-                    ) : (
-                      entry.conferenceId
-                    )}
-                    {" · "}
-                    {entry.occurredAt}
-                  </p>
-                </div>
-              </article>
-            </li>
-          );
-        })}
-      </ul>
-      <SyncPreview
-        contactId={contactId}
-        sourceKind={entries.some((entry) => entry.kind === "actual_encounter") ? "encounter" : "prep"}
-        sourceId={
-          entries.filter((entry) => entry.kind === "actual_encounter").at(-1)?.id ??
-          `prep-${contactId}`
-        }
-        crmState={contactId === "david" ? "owned_by_other" : contactId === "marcus" ? "owned_by_me" : "not_present"}
-        conferenceName={
-          CONFERENCES.find((item) => item.demoScenarioId === "money20-eu-demo")?.name ??
-          "Money20/20 Europe"
-        }
-      />
-      <RelationshipCopilot
-        personId={contactId}
-        companyId={contact.company.toLowerCase().replace(/[^a-z0-9]+/g, "-")}
-        conferenceId={entries[0]?.conferenceId}
-      />
+      <div className="detail-workspace">
+        <div className="detail-col">
+          <ul className="conference-list">
+            {planned.map((meeting) => {
+              const conference =
+                CONFERENCES.find((item) => item.id === meeting.conferenceId) ??
+                CONFERENCES.find((item) => item.demoScenarioId === meeting.conferenceId);
+              return (
+                <li key={meeting.id}>
+                  <article className="conference-card">
+                    <div>
+                      <p className="eyebrow">Planned meeting · {meeting.outcome}</p>
+                      <p>{meeting.context}</p>
+                      <p className="provenance">
+                        {conference ? (
+                          <Link href={`/conferences/${conference.id}`}>{conference.name}</Link>
+                        ) : (
+                          meeting.conferenceId
+                        )}
+                        {" · "}
+                        {meeting.scheduledFor}
+                      </p>
+                    </div>
+                    <Badge>{meeting.outcome.replaceAll("_", " ")}</Badge>
+                  </article>
+                </li>
+              );
+            })}
+            {entries.map((entry) => {
+              const conference =
+                CONFERENCES.find((item) => item.id === entry.conferenceId) ??
+                CONFERENCES.find((item) => item.demoScenarioId === entry.conferenceId);
+              return (
+                <li key={entry.id} id={entry.id}>
+                  <article className="conference-card">
+                    <div>
+                      <p className="eyebrow">
+                        {LABELS[entry.kind]}
+                        {entry.kind === "actual_encounter"
+                          ? ` · Encounter ${encounterOrdinalById.get(entry.id)}`
+                          : ""}
+                      </p>
+                      <p>{entry.summary}</p>
+                      <p>
+                        {entry.company} · {entry.role}
+                        {entry.nextStep ? ` · Next: ${entry.nextStep}` : ""}
+                      </p>
+                      <p className="provenance">
+                        {conference ? (
+                          <Link href={`/conferences/${conference.id}`}>{conference.name}</Link>
+                        ) : (
+                          entry.conferenceId
+                        )}
+                        {" · "}
+                        {entry.occurredAt}
+                      </p>
+                    </div>
+                    <Badge tone={entry.kind === "actual_encounter" ? "success" : "neutral"}>
+                      {LABELS[entry.kind]}
+                    </Badge>
+                  </article>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+        <div className="detail-col">
+          <RelationshipCopilot
+            personId={contactId}
+            companyId={contact.company.toLowerCase().replace(/[^a-z0-9]+/g, "-")}
+            conferenceId={entries[0]?.conferenceId}
+          />
+          <SyncPreview
+            contactId={contactId}
+            sourceKind={entries.some((entry) => entry.kind === "actual_encounter") ? "encounter" : "prep"}
+            sourceId={
+              entries.filter((entry) => entry.kind === "actual_encounter").at(-1)?.id ??
+              `prep-${contactId}`
+            }
+            crmState={contactId === "david" ? "owned_by_other" : contactId === "marcus" ? "owned_by_me" : "not_present"}
+            conferenceName={
+              CONFERENCES.find((item) => item.demoScenarioId === "money20-eu-demo")?.name ??
+              "Money20/20 Europe"
+            }
+          />
+        </div>
+      </div>
     </section>
   );
 }

@@ -2,6 +2,9 @@
 
 import { useMemo, useState } from "react";
 
+import { Alert } from "@/components/ui/alert";
+import { Button, ButtonRow } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { CONFERENCES } from "@/data/conferences";
 import { PROFILES, type FullProfileId } from "@/data/prep-snapshots";
 import { useWorkspace } from "@/workspace/provider";
@@ -34,6 +37,8 @@ export function CaptureView() {
       )?.name,
     [form.conferenceId],
   );
+
+  const capturedCount = state.plannedMeetings.filter((meeting) => meeting.outcome === "met").length;
 
   function formFromMeeting(plannedMeetingId: string): CaptureDraft {
     const saved = state.captureDrafts[plannedMeetingId];
@@ -104,13 +109,15 @@ export function CaptureView() {
 
   return (
     <section className="page-stack" aria-labelledby="capture-title">
-      <div>
-        <p className="eyebrow">Field capture</p>
-        <h1 id="capture-title">You planned to meet</h1>
-        <p className="lede">
-          Mark Met to capture one actual encounter. Didn’t meet records the plan outcome only.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Field capture"
+        title="You planned to meet"
+        titleId="capture-title"
+        description="Mark Met to capture one actual encounter. Didn’t meet records the plan outcome only."
+      />
+      <p className="capture-progress">
+        {planned.length} planned {planned.length === 1 ? "meeting" : "meetings"} remaining · {capturedCount} captured
+      </p>
       <ul className="conference-list">
         {planned.map((item) => {
           const person = item.personId in PROFILES ? PROFILES[item.personId as FullProfileId] : null;
@@ -120,13 +127,11 @@ export function CaptureView() {
                 <div>
                   <h2>{person?.name ?? item.personId}</h2>
                   <p>{item.context}</p>
-                  <div className="decision-row">
-                    <button type="button" className="chip" onClick={() => openMet(item.id)}>
+                  <ButtonRow>
+                    <Button variant="primary" onClick={() => openMet(item.id)}>
                       Met
-                    </button>
-                    <button
-                      type="button"
-                      className="chip"
+                    </Button>
+                    <Button
                       onClick={() =>
                         dispatch({
                           type: "meeting/outcome",
@@ -136,27 +141,25 @@ export function CaptureView() {
                       }
                     >
                       Didn’t meet
-                    </button>
-                  </div>
+                    </Button>
+                  </ButtonRow>
                 </div>
               </article>
             </li>
           );
         })}
       </ul>
-      <button type="button" className="chip" onClick={openUnplanned}>
-        Capture unplanned meeting
-      </button>
+      <Button onClick={openUnplanned}>Capture unplanned meeting</Button>
       {formVisible ? (
         <form
-          className="workspace-card compact"
+          className="ui-card capture-shell"
           onSubmit={(event) => {
             event.preventDefault();
             save();
           }}
         >
           <h2>Save meeting</h2>
-          {error ? <p className="demo-warning">{error}</p> : null}
+          {error ? <Alert tone="warning">{error}</Alert> : null}
           <label className="field-label">
             Name
             <input
@@ -204,9 +207,9 @@ export function CaptureView() {
               onChange={(event) => setField({ ...form, nextStep: event.target.value })}
             />
           </label>
-          <button type="submit" className="chip chip-active">
+          <Button type="submit" variant="primary">
             Save encounter
-          </button>
+          </Button>
         </form>
       ) : null}
     </section>
