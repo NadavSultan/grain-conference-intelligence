@@ -119,8 +119,7 @@ describe("POST /api/relationship-brief", () => {
   it("rejects the sixth live call with usage_exhausted and keeps fallback usable", async () => {
     process.env.OPENAI_API_KEY = "sk-test";
     createMock.mockResolvedValue({ output_text: JSON.stringify(validUnclearBrief()) });
-    const { POST } = await import("./route");
-    const { signUsageCookie } = await import("@/features/copilot/usage-cookie");
+    const { POST, signUsageCookie } = await import("./route");
     const exhausted = signUsageCookie(0);
     const response = await POST(
       new Request("http://localhost/api/relationship-brief", {
