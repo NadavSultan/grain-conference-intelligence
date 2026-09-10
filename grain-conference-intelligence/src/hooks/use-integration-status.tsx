@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 export type IntegrationStatus = {
   liveConfigured: boolean;
   model: string;
 };
 
-export function useIntegrationStatus(): IntegrationStatus | null {
+const IntegrationStatusContext = createContext<IntegrationStatus | null>(null);
+
+export function IntegrationStatusProvider({ children }: { children: ReactNode }) {
   const [live, setLive] = useState<IntegrationStatus | null>(null);
 
   useEffect(() => {
@@ -22,5 +24,11 @@ export function useIntegrationStatus(): IntegrationStatus | null {
       .catch(() => setLive({ liveConfigured: false, model: "gpt-5.4-mini" }));
   }, []);
 
-  return live;
+  return (
+    <IntegrationStatusContext.Provider value={live}>{children}</IntegrationStatusContext.Provider>
+  );
+}
+
+export function useIntegrationStatus(): IntegrationStatus | null {
+  return useContext(IntegrationStatusContext);
 }

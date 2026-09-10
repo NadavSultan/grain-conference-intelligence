@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
 import { AppShell } from "@/components/app-shell";
+import { IntegrationStatusProvider } from "@/hooks/use-integration-status";
 import { WorkspaceProvider } from "@/workspace/provider";
 import "./globals.css";
 
@@ -17,7 +18,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" className={inter.variable}>
       <body>
         <WorkspaceProvider>
-          <AppShell>{children}</AppShell>
+          <IntegrationStatusProvider>
+            <AppShell>{children}</AppShell>
+          </IntegrationStatusProvider>
         </WorkspaceProvider>
       </body>
     </html>
