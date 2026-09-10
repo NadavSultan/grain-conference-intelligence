@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, Settings, X } from "lucide-react";
@@ -10,20 +10,76 @@ import { GrainWordmark } from "@/components/grain-wordmark";
 import { NavItem } from "@/components/ui/nav-item";
 import { useIntegrationStatus } from "@/hooks/use-integration-status";
 
+const BACKGROUND_SELECTORS = [".sidebar", ".mobile-header", ".workspace-body", ".mobile-bottom-nav"];
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
+
+function getFocusable(container: HTMLElement): HTMLElement[] {
+  return [...container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)].filter(
+    (element) => !element.hasAttribute("inert") && element.tabIndex !== -1,
+  );
+}
+
 export function MobileHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const drawerId = useId();
   const live = useIntegrationStatus();
   const liveReady = Boolean(live?.liveConfigured);
+  const openButtonRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
+
+    const background = BACKGROUND_SELECTORS.map((selector) => document.querySelector(selector)).filter(
+      (element): element is Element => element instanceof Element,
+    );
+    const html = document.documentElement;
+    const body = document.body;
+    const workspace = document.querySelector(".workspace-body");
+    const previousHtmlOverflow = html.style.overflow;
+    const previousBodyOverflow = body.style.overflow;
+    const previousWorkspaceOverflow = workspace instanceof HTMLElement ? workspace.style.overflow : "";
+
+    background.forEach((element) => element.setAttribute("inert", ""));
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    if (workspace instanceof HTMLElement) workspace.style.overflow = "hidden";
+
+    const trigger = openButtonRef.current;
+    closeButtonRef.current?.focus();
+
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setOpen(false);
+        return;
+      }
+      if (event.key !== "Tab" || !panelRef.current) return;
+      const nodes = getFocusable(panelRef.current);
+      if (nodes.length === 0) return;
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     }
+
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      background.forEach((element) => element.removeAttribute("inert"));
+      html.style.overflow = previousHtmlOverflow;
+      body.style.overflow = previousBodyOverflow;
+      if (workspace instanceof HTMLElement) workspace.style.overflow = previousWorkspaceOverflow;
+      trigger?.focus();
+    };
   }, [open]);
 
   return (
@@ -35,6 +91,7 @@ export function MobileHeader() {
             <Settings size={18} aria-hidden="true" />
           </Link>
           <button
+            ref={openButtonRef}
             type="button"
             className="icon-btn"
             aria-expanded={open}
@@ -49,6 +106,7 @@ export function MobileHeader() {
       {open ? (
         <div className="mobile-drawer" role="presentation" onClick={() => setOpen(false)}>
           <div
+            ref={panelRef}
             className="mobile-drawer-panel"
             id={drawerId}
             role="dialog"
@@ -58,7 +116,12 @@ export function MobileHeader() {
           >
             <div className="page-header-row">
               <GrainWordmark stacked />
-              <button type="button" className="icon-btn" onClick={() => setOpen(false)}>
+              <button
+                ref={closeButtonRef}
+                type="button"
+                className="icon-btn"
+                onClick={() => setOpen(false)}
+              >
                 <X size={18} aria-hidden="true" />
                 <span className="sr-only">Close navigation</span>
               </button>
