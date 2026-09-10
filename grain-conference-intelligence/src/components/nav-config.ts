@@ -17,7 +17,7 @@ export type NavItemConfig = {
 
 export const PRIMARY_NAV: NavItemConfig[] = [
   { href: "/", label: "Today's Focus", shortLabel: "Focus", icon: LayoutDashboard },
-  { href: "/conferences", label: "Conferences", shortLabel: "Conferences", icon: CalendarDays },
+  { href: "/conferences", label: "Conferences", shortLabel: "Events", icon: CalendarDays },
   { href: "/planning", label: "Planning", shortLabel: "Planning", icon: CalendarRange },
   { href: "/capture", label: "Capture", shortLabel: "Capture", icon: ClipboardPen },
   { href: "/relationships", label: "Relationships", shortLabel: "People", icon: Users },
