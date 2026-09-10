@@ -61,15 +61,20 @@ export function ConferenceDetail({ conferenceId }: { conferenceId: string }) {
         titleId="conference-title"
         description={`${conference.startDate} – ${conference.endDate} · ${conference.geography} · ${conference.vertical}`}
         actions={
-          <a
-            href={conference.sourceUrl}
-            target="_blank"
-            rel="noreferrer"
-            className={buttonClassName("secondary")}
-          >
-            Official source
-            <ExternalLink size={14} aria-hidden="true" />
-          </a>
+          <>
+            <Link href={`/conferences/${conference.id}/brief`} className={buttonClassName("secondary")}>
+              Export brief
+            </Link>
+            <a
+              href={conference.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              className={buttonClassName("secondary")}
+            >
+              Official source
+              <ExternalLink size={14} aria-hidden="true" />
+            </a>
+          </>
         }
         tabs={
           <div className="sticky-tabs" role="tablist" aria-label="Conference sections">

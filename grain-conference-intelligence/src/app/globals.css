@@ -1630,3 +1630,97 @@ h1 {
     scroll-behavior: auto !important;
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/* Conference brief / print report                                            */
+/* -------------------------------------------------------------------------- */
+
+.conference-brief-report {
+  max-width: 210mm;
+  margin: 0 auto;
+  gap: 18px;
+}
+
+.brief-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.brief-masthead {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0 4px;
+}
+
+.brief-masthead h1 {
+  font-size: 1.85rem;
+}
+
+.brief-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.brief-contact:last-child {
+  border-bottom: 0;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  html,
+  body {
+    background: #fff;
+    color: #111;
+  }
+
+  .sidebar,
+  .mobile-header,
+  .mobile-bottom-nav,
+  .mobile-drawer,
+  .page-header-actions,
+  .report-actions,
+  .no-print,
+  .brief-toolbar {
+    display: none !important;
+  }
+
+  .app-frame,
+  .workspace,
+  .workspace-body,
+  .workspace-main {
+    display: block;
+    height: auto !important;
+    max-width: none;
+    overflow: visible !important;
+    padding: 0;
+    margin: 0;
+    background: #fff;
+    box-shadow: none;
+  }
+
+  .conference-brief-report {
+    max-width: none;
+    gap: 14px;
+  }
+
+  .ui-card,
+  .event-header,
+  .ui-alert,
+  .empty-state,
+  .kpi-chip {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+
+  a[href]::after {
+    content: none;
+  }
+}
