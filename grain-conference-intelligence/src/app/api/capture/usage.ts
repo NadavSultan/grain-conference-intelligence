@@ -1,5 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
+import { aiUsageSecret } from "@/features/integrations/openai-credentials";
+
 /**
  * Voice capture keeps its own allowance so a demo of the capture flow cannot
  * exhaust the Relationship Copilot's five-call budget, and vice versa.
@@ -15,7 +17,7 @@ export function signCaptureUsage(remaining: number): string {
 }
 
 export function readCaptureUsage(cookieHeader: string | null): number {
-  if (!process.env.AI_USAGE_SECRET) return CAPTURE_USAGE_MAX;
+  if (!aiUsageSecret()) return CAPTURE_USAGE_MAX;
   const raw = cookieValue(cookieHeader, CAPTURE_USAGE_COOKIE);
   if (!raw) return CAPTURE_USAGE_MAX;
   const [payload, hmac] = raw.split(".");
@@ -35,7 +37,7 @@ export function jsonWithCaptureUsage(
   init?: ResponseInit,
 ): Response {
   const response = Response.json(payload, init);
-  if (process.env.AI_USAGE_SECRET) {
+  if (aiUsageSecret()) {
     response.headers.set(
       "Set-Cookie",
       `${CAPTURE_USAGE_COOKIE}=${signCaptureUsage(remaining)}; HttpOnly; Path=/; SameSite=Lax`,
@@ -45,7 +47,7 @@ export function jsonWithCaptureUsage(
 }
 
 function usageSecret(): string {
-  const value = process.env.AI_USAGE_SECRET;
+  const value = aiUsageSecret();
   if (!value) throw new Error("usage_secret_unavailable");
   return value;
 }

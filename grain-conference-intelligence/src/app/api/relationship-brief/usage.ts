@@ -1,5 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
+import { aiUsageSecret } from "@/features/integrations/openai-credentials";
+
 export const USAGE_COOKIE = "grain-ai-usage";
 export const USAGE_MAX = 5;
 
@@ -11,7 +13,7 @@ export function signUsageCookie(remaining: number): string {
 }
 
 export function readUsageRemaining(cookieHeader: string | null): number {
-  if (!process.env.AI_USAGE_SECRET) return USAGE_MAX;
+  if (!aiUsageSecret()) return USAGE_MAX;
   const raw = cookieValue(cookieHeader, USAGE_COOKIE);
   if (!raw) return USAGE_MAX;
   const [payload, hmac] = raw.split(".");
@@ -25,7 +27,7 @@ export function readUsageRemaining(cookieHeader: string | null): number {
 
 export function jsonWithUsageCookie(payload: unknown, remaining: number): Response {
   const response = Response.json(payload);
-  if (process.env.AI_USAGE_SECRET) {
+  if (aiUsageSecret()) {
     response.headers.set(
       "Set-Cookie",
       `${USAGE_COOKIE}=${signUsageCookie(remaining)}; HttpOnly; Path=/; SameSite=Lax`,
@@ -35,7 +37,7 @@ export function jsonWithUsageCookie(payload: unknown, remaining: number): Respon
 }
 
 function usageSecret(): string {
-  const value = process.env.AI_USAGE_SECRET;
+  const value = aiUsageSecret();
   if (!value) {
     throw new Error("usage_secret_unavailable");
   }

@@ -10,7 +10,12 @@ import {
   validateRelationshipBrief,
   type CopilotEvidenceContext,
 } from "@/features/copilot/schema";
-import { isSameOrigin, openaiModel, resolveOpenAIApiKey } from "@/features/integrations/openai-credentials";
+import {
+  aiUsageSecret,
+  isSameOrigin,
+  openaiModel,
+  resolveOpenAIApiKey,
+} from "@/features/integrations/openai-credentials";
 import { deriveRelationshipEligibility } from "@/features/relationships/eligibility";
 
 import { jsonWithUsageCookie, readUsageRemaining } from "./usage";
@@ -37,7 +42,7 @@ type BriefRequest = z.infer<typeof briefRequestSchema>;
 export async function GET(request: Request): Promise<Response> {
   const resolved = resolveOpenAIApiKey(request);
   return Response.json({
-    liveConfigured: resolved.source !== "none" && Boolean(process.env.AI_USAGE_SECRET),
+    liveConfigured: resolved.source !== "none" && Boolean(aiUsageSecret()),
     model: openaiModel(),
     hubspotLive: false,
   });
@@ -91,7 +96,7 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  if (!process.env.AI_USAGE_SECRET) {
+  if (!aiUsageSecret()) {
     return Response.json(
       {
         ok: false,

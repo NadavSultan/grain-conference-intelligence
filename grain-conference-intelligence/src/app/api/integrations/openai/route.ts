@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import {
   CREDENTIAL_MAX_AGE_SECONDS,
+  aiUsageSecret,
   clearCredentialCookie,
   credentialCookieSecure,
   credentialStatus,
@@ -46,7 +47,7 @@ export async function POST(request: Request): Promise<Response> {
   const encrypted = encryptApiKey(parsed.data.apiKey, secret);
   const response = statusResponse({
     configured: true,
-    liveConfigured: Boolean(process.env.AI_USAGE_SECRET),
+    liveConfigured: Boolean(aiUsageSecret()),
     source: "session",
     model: openaiModel(),
   });
