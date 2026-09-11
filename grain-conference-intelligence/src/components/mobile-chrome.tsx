@@ -115,16 +115,16 @@ export function MobileHeader() {
             onClick={(event) => event.stopPropagation()}
           >
             <div className="page-header-row">
-              <GrainWordmark stacked />
               <button
                 ref={closeButtonRef}
                 type="button"
-                className="icon-btn"
+                className="icon-btn mobile-drawer-close"
                 onClick={() => setOpen(false)}
               >
                 <X size={18} aria-hidden="true" />
                 <span className="sr-only">Close navigation</span>
               </button>
+              <GrainWordmark stacked />
             </div>
             <nav aria-label="All destinations">
               {PRIMARY_NAV.map((route) => (

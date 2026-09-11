@@ -15,19 +15,26 @@ async function assertNoHorizontalOverflow(page: Page) {
 async function runCoreJourney(page: Page, viewport: (typeof VIEWPORTS)[number]) {
   const consoleErrors: string[] = [];
   page.on("console", (message) => {
-    if (message.type() === "error") consoleErrors.push(message.text());
+    if (message.type() === "error") {
+      consoleErrors.push(message.text());
+    }
   });
   page.on("pageerror", (error) => {
     consoleErrors.push(error.message);
   });
 
   await page.setViewportSize({ width: viewport.width, height: viewport.height });
+  await page.addInitScript(() => {
+    window.sessionStorage.setItem("grain-openai-mode", "live");
+  });
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: /Decide coverage/ })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("heading", { name: "Today" })).toBeVisible({ timeout: 15_000 });
 
   await page.getByRole("link", { name: "Conferences" }).click();
-  await page.getByPlaceholder("Name or city").fill("Money20/20 Europe");
-  await page.getByRole("link", { name: "Money20/20 Europe" }).click();
+  await page.getByPlaceholder("Search name, location, or vertical").fill("Money20/20 Europe");
+  await expect(page.getByRole("complementary", { name: "Selected conference" })).toContainText("Money20/20 Europe");
+  await page.getByRole("link", { name: "Open conference workspace" }).click();
+  await expect(page).toHaveURL(/\/conferences\/money20-europe-2027$/);
   await expect(page.getByRole("heading", { name: "Money20/20 Europe" })).toBeVisible();
   await expect(page.getByText("Explainable score snapshot")).toBeVisible();
   await expect(page.getByText("Research time")).toBeVisible();
@@ -66,7 +73,7 @@ async function runCoreJourney(page: Page, viewport: (typeof VIEWPORTS)[number]) 
   await expect(page.locator("#enc-pm-marcus")).toHaveCount(1);
 
   await page.getByRole("button", { name: "Generate relationship brief" }).click();
-  await expect(page.getByText(/Deterministic fallback|Live AI/)).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator("p.eyebrow").filter({ hasText: /Deterministic fallback|Live AI/ })).toBeVisible({ timeout: 20_000 });
   await expect(page.getByRole("link", { name: "enc-marcus-money20-prior" })).toBeVisible();
 
   await page.getByRole("button", { name: "Open CRM preview" }).click();
@@ -78,7 +85,7 @@ async function runCoreJourney(page: Page, viewport: (typeof VIEWPORTS)[number]) 
 
   await page.reload();
   await expect(page.getByText(/2 actual meetings/)).toBeVisible();
-  await expect(page.getByText(/Deterministic fallback|Live AI|Cached demo example/)).toBeVisible();
+  await expect(page.locator("p.eyebrow").filter({ hasText: /Deterministic fallback|Live AI|Cached demo example/ })).toBeVisible();
   await expect(page.getByText(/View in HubSpot \(demo record\) demo-hs-contact-marcus/)).toBeVisible();
 
   await page.getByRole("link", { name: "Planning" }).click();

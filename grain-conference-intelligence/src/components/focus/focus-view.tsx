@@ -5,6 +5,7 @@ import { CalendarClock, ClipboardList } from "lucide-react";
 import { useMemo } from "react";
 
 import { Card } from "@/components/ui/card";
+import { buttonClassName } from "@/components/ui/button";
 import { MetricCard } from "@/components/ui/metric-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { CONFERENCES } from "@/data/conferences";
@@ -28,26 +29,43 @@ export function FocusView() {
 
   const undecided = items.filter((item) => item.kind === "undecided_conference");
   const prepLinks = items.filter((item) => item.kind === "prep_link");
+  const plannedMeetings = state.plannedMeetings.filter((meeting) => meeting.outcome === "planned").length;
+  const capturedMeetings = state.timeline.filter((entry) => entry.kind === "actual_encounter").length;
 
   return (
     <section className="page-stack" aria-labelledby="focus-title">
       <PageHeader
-        eyebrow="Today’s Focus"
-        title="Decide coverage, then open cached Prep"
+        eyebrow="Wednesday, May 20"
+        title="Today"
         titleId="focus-title"
-        description="Focus only lists conferences still awaiting attend/watch/skip and direct Prep links. Opening these pages never starts research or AI."
+        description="Decide coverage, prepare the right people, and close the loop after every meeting."
+        actions={<Link href="/capture" className={buttonClassName("primary")}>Capture meeting</Link>}
       />
       <div className="metric-grid">
         <MetricCard
-          label="Undecided upcoming"
+          label="Decisions needed"
           value={undecided.length}
           hint="Awaiting attend, watch, or skip"
           highlighted={undecided.length > 0}
+          href="/conferences"
         />
         <MetricCard
           label="Cached Prep"
           value={prepLinks.length}
           hint="Stored snapshots only. Opening Prep does not research live sources."
+          href="/conferences"
+        />
+        <MetricCard
+          label="Planned meetings"
+          value={plannedMeetings}
+          hint="Awaiting an encounter outcome"
+          href="/capture"
+        />
+        <MetricCard
+          label="Meetings captured"
+          value={capturedMeetings}
+          hint="Persisted actual encounters"
+          href="/relationships"
         />
       </div>
       <div className="focus-grid">

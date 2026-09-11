@@ -189,4 +189,18 @@ describe("Relationship Copilot credential states", () => {
     );
     expect(copilotUserNotice("missing_key").message).not.toContain("missing_key");
   });
+
+  it("keeps the cached brief when an API error has no safe fallback", async () => {
+    sessionStorage.setItem("grain-openai-mode", "live");
+    vi.stubGlobal("fetch", mockApis({ ok: false, code: "forbidden", fallback: null }, false));
+    const user = userEvent.setup();
+    renderCopilot();
+
+    await generateBrief(user);
+
+    await waitFor(() => {
+      expect(screen.getByText("Cached demo example · cached-example/none · cached")).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/Cannot read properties/)).not.toBeInTheDocument();
+  });
 });

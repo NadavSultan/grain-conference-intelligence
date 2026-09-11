@@ -40,7 +40,7 @@ export function RelationshipCopilot({
           brief: CACHED_MARCUS_BRIEF,
         }
       : null;
-  const current = stored ?? cached;
+  const current = stored?.brief ? stored : cached;
   const profile = personId in PROFILES ? PROFILES[personId as FullProfileId] : null;
   const contact = state.contacts.find((item) => item.id === personId);
   const canDraftEmail = profile
@@ -86,9 +86,9 @@ export function RelationshipCopilot({
         | {
             ok: false;
             code: string;
-            fallback: RelationshipBrief;
+            fallback: RelationshipBrief | null;
           };
-      if (payload.ok) {
+      if (payload.ok && payload.brief) {
         dispatch({
           type: "copilot/store",
           personId,
@@ -101,7 +101,7 @@ export function RelationshipCopilot({
             brief: payload.brief,
           },
         });
-      } else {
+      } else if (!payload.ok && payload.fallback) {
         dispatch({
           type: "copilot/store",
           personId,
@@ -114,6 +114,8 @@ export function RelationshipCopilot({
             brief: payload.fallback,
           },
         });
+        setNotice(copilotUserNotice(payload.code));
+      } else if (!payload.ok) {
         setNotice(copilotUserNotice(payload.code));
       }
     } catch {
