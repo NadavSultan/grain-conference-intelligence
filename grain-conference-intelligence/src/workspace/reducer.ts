@@ -7,6 +7,10 @@ export function workspaceReducer(
   action: WorkspaceAction,
 ): WorkspaceStateV1 {
   switch (action.type) {
+    case "timeline/add-outreach": {
+      const entry: TimelineEntry = { id: `outreach-${action.personId}-${Date.now()}`, personId: action.personId, companyId: action.company.toLowerCase().replace(/[^a-z0-9]+/g, "-"), conferenceId: action.conferenceId, kind: "outreach_sent", occurredAt: action.occurredAt, summary: action.summary, company: action.company, role: action.role };
+      return { ...state, timeline: [...state.timeline, entry] };
+    }
     case "field/add": {
       const id = `${action.conferenceId}:${action.personId}`;
       if (state.fieldList.some((entry) => entry.id === id)) return state;
