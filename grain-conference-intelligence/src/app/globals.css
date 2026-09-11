@@ -1845,14 +1845,14 @@ body { background: var(--surface); color: var(--ink); }
 .catalog-search:focus-within { border-color: var(--signature-blue); box-shadow: var(--focus-ring); }
 .catalog-search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--ink-strong); font-size: 0.75rem; }
 .conference-filter-row { flex-wrap: wrap; border-bottom: 1px solid var(--border); }
-.compact-filter { display: flex; align-items: center; gap: 6px; color: #8b96ae; font-size: 0.68rem; font-weight: 750; }
+.compact-filter { display: flex; align-items: center; gap: 6px; color: #536582; font-size: 0.75rem; font-weight: 750; }
 .compact-filter select { min-height: 32px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: #fff; color: var(--ink); font-size: 0.71rem; }
-.catalog-count { margin-left: auto; color: #a0a9bb; font-size: 0.7rem; font-weight: 650; }
+.catalog-count { margin-left: auto; color: #5f6f8f; font-size: 0.75rem; font-weight: 650; }
 .conference-split { display: grid; grid-template-columns: minmax(0, 1fr) 340px; min-height: 510px; }
 .conference-list-pane { min-width: 0; }
 .conference-data-table { border-radius: 0; box-shadow: none; }
 .conference-data-table .data-table { border: 0; }
-.data-table th { background: #fafbfe; color: #929db3; font-size: 0.63rem; letter-spacing: 0.08em; }
+.data-table th { background: #fafbfe; color: #566783; font-size: 0.75rem; letter-spacing: 0.08em; }
 .data-table td { padding: 15px 14px; border-top-color: #edf0f5; color: #67738e; font-size: 0.74rem; }
 .data-table tbody tr { cursor: pointer; transition: background var(--ease), box-shadow var(--ease); }
 .data-table tbody tr:hover, .data-table tbody tr:focus-visible, .data-table tbody tr.conference-row-selected { background: #f2f6ff; box-shadow: inset 3px 0 0 var(--action); }
@@ -1865,7 +1865,7 @@ body { background: var(--surface); color: var(--ink); }
 .detail-score-block span { color: var(--secondary); font-size: 0.68rem; font-weight: 700; }
 .detail-score-block strong { grid-row: span 2; color: var(--ink-strong); font-size: 2.5rem; line-height: 1; }
 .detail-block { padding: 12px 0; border-top: 1px solid var(--border); }
-.detail-row { margin: 8px 0; color: var(--secondary); font-size: 0.73rem; }
+.detail-row { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; align-items: baseline; margin: 8px 0; color: var(--secondary); font-size: 0.73rem; }
 .detail-row strong { color: var(--ink-strong); }
 .catalog-alternate { padding: 24px; }
 .catalog-alternate > h2 { color: var(--ink-strong); font-size: 1.1rem; }
@@ -1890,7 +1890,10 @@ body { background: var(--surface); color: var(--ink); }
 .planning-callouts { gap: 14px; }
 .month-group { padding: 18px 20px; border: 1px solid var(--border); border-radius: 15px; background: #fff; box-shadow: var(--shadow-sm); }
 .month-group + .month-group { margin-top: -8px; }
-.conference-card { border-color: var(--border); border-radius: 12px; background: #fff; box-shadow: none; }
+.conference-card { align-items: flex-start; border-color: var(--border); border-radius: 12px; background: #fff; box-shadow: none; }
+.conference-card > .ui-badge,
+.conference-card > .badge-row { align-self: flex-start; flex: 0 0 auto; }
+.conference-card > .badge-row { align-items: flex-start; }
 .conference-card:hover { border-color: #b9cafa; box-shadow: var(--shadow-xs); }
 .capture-shell, .settings-openai-card, .settings-side-cards .ui-card, .detail-workspace > .detail-col > .ui-card { background: #fff; }
 .detail-workspace { gap: 18px; }
@@ -1898,6 +1901,13 @@ body { background: var(--surface); color: var(--ink); }
 .conference-brief-report .brief-masthead, .conference-brief-report .event-header { background: #fff; border: 1px solid var(--border); border-radius: 15px; box-shadow: var(--shadow-sm); }
 .mobile-drawer-panel .page-header-row .mobile-drawer-close { order: 2; }
 .mobile-drawer-panel .page-header-row .wordmark { order: 1; }
+.mobile-drawer-panel .wordmark { color: var(--ink-strong); }
+.mobile-drawer-panel .wordmark-name { color: var(--ink-strong); }
+.mobile-drawer-panel .wordmark-product { color: var(--secondary); }
+
+@media (min-width: 621px) and (max-width: 1100px) {
+  .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 
 @media (max-width: 1100px) {
   .workspace-main { padding-inline: 22px; }
