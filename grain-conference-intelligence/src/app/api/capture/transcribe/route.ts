@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 
 import { captureTranscribeModel } from "@/features/capture/voice-extraction";
-import { isSameOrigin, resolveOpenAIApiKey } from "@/features/integrations/openai-credentials";
+import { aiUsageSecret, isSameOrigin, resolveOpenAIApiKey } from "@/features/integrations/openai-credentials";
 
 import { CAPTURE_USAGE_MAX, jsonWithCaptureUsage, readCaptureUsage } from "../usage";
 
@@ -18,7 +18,7 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ ok: false, code: "invalid_request", retryable: false }, { status: 415 });
   }
 
-  if (!process.env.AI_USAGE_SECRET) {
+  if (!aiUsageSecret()) {
     return Response.json({ ok: false, code: "provider_error", retryable: true }, { status: 503 });
   }
 
@@ -80,7 +80,7 @@ export async function POST(request: Request): Promise<Response> {
 export async function GET(request: Request): Promise<Response> {
   const resolved = resolveOpenAIApiKey(request);
   return Response.json({
-    liveConfigured: resolved.source !== "none" && Boolean(process.env.AI_USAGE_SECRET),
+    liveConfigured: resolved.source !== "none" && Boolean(aiUsageSecret()),
     transcribeModel: captureTranscribeModel(),
     usageMax: CAPTURE_USAGE_MAX,
   });
