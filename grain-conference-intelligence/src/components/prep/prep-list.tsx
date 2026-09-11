@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 
 import { Badge, humanizeToken, type BadgeTone } from "@/components/ui/badge";
 import { ResponsiveSection, StackList, Table, Td, Th } from "@/components/ui/table";
-import type { AttendanceConfidence, CrmState, PrepSnapshot, PrepStatus, RoleFit } from "@/domain/types";
+import type { AttendanceConfidence, PrepSnapshot, PrepStatus } from "@/domain/types";
 import { PROFILES } from "@/data/prep-snapshots";
 import { crmLabel } from "@/features/prep/actions";
 import {
@@ -13,33 +12,12 @@ import {
   calculatePrepSummary,
   filterPrepRecords,
   sortPrepRecords,
-  type PrepSummaryFilter,
 } from "@/features/prep/selectors";
-
-const FILTERS: { id: PrepSummaryFilter; label: string; hint?: string }[] = [
-  { id: "verified", label: "Attendees verified", hint: "Public signals, including likely attendance; not verified check-ins." },
-  { id: "relevant", label: "Relevant" },
-  { id: "ready", label: "Ready to contact" },
-  { id: "coordination", label: "Need coordination" },
-];
 
 function attendanceTone(value: AttendanceConfidence): BadgeTone {
   if (value === "confirmed" || value === "likely") return "success";
   if (value === "unknown") return "neutral";
   return "warning";
-}
-
-function roleTone(value: RoleFit): BadgeTone {
-  if (value === "decision_maker") return "success";
-  if (value === "influencer") return "blue";
-  return "neutral";
-}
-
-function crmTone(value: CrmState): BadgeTone {
-  if (value === "owned_by_me") return "success";
-  if (value === "not_present") return "info";
-  if (value === "owned_by_other" || value === "open_deal") return "warning";
-  return "neutral";
 }
 
 function prepTone(value: PrepStatus): BadgeTone {
@@ -62,7 +40,6 @@ export function PrepList({
   previous?: PrepSnapshot;
   prepStatuses: Record<string, PrepStatus>;
 }) {
-  const [filter, setFilter] = useState<PrepSummaryFilter | "all">("all");
   const records = buildPrepViewRecords({
     records: snapshot.records,
     previousRecords: previous?.records,
@@ -71,53 +48,33 @@ export function PrepList({
     profiles: PROFILES,
   });
   const summary = calculatePrepSummary(records);
-  const visible = sortPrepRecords(filterPrepRecords(records, filter));
+  const visible = sortPrepRecords(filterPrepRecords(records, "all"));
+  const meetingsBooked = records.filter((record) => record.prepStatus === "meeting_booked").length;
+  const outreachSent = records.filter((record) => ["contacted", "replied", "meeting_booked"].includes(record.prepStatus)).length;
+  const replied = records.filter((record) => record.prepStatus === "replied").length;
 
   return (
     <section className="page-stack">
-      <div className="kpi-strip" role="group" aria-label="Prep summary filters">
-        {FILTERS.map((item) => {
-          const count =
-            item.id === "verified"
-              ? summary.attendeesVerified
-              : item.id === "relevant"
-                ? summary.relevant
-                : item.id === "ready"
-                  ? summary.readyToContact
-                  : summary.needCoordination;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              className={filter === item.id ? "kpi-chip kpi-chip-active" : "kpi-chip"}
-              title={item.hint}
-              onClick={() => setFilter(filter === item.id ? "all" : item.id)}
-            >
-              <strong>{count}</strong>
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
+      <div className="prep-activity-summary" aria-label="Conference outreach activity">
+        <article><span>Meetings booked</span><strong>{meetingsBooked}</strong><small>Confirmed meetings</small></article>
+        <article><span>Outreach sent</span><strong>{outreachSent}</strong><small>Messages sent</small></article>
+        <article><span>Replied</span><strong>{replied}</strong><small>Positive responses</small></article>
+        <article><span>Verified attendees</span><strong>{summary.attendeesVerified}</strong><small>Ready for review</small></article>
       </div>
-      <p className="provenance">
-        Public signals, including likely attendance; not verified check-ins. Unknown CRM, missing
-        channels, unresolved identity, and already-contacted people can be relevant without being ready.
-      </p>
+      <div className="prep-list-heading"><div><h2>Verified attendees</h2></div><span>{visible.length} people found</span></div>
       <ResponsiveSection
         desktop={
           <Table>
             <thead>
               <tr>
                 <Th>Person</Th>
-                <Th>Attendance</Th>
-                <Th>ICP</Th>
-                <Th>CRM</Th>
-                <Th>Prep</Th>
+                <Th>Attendance</Th><Th>Role</Th><Th>Company</Th><Th>Next move</Th>
               </tr>
             </thead>
             <tbody>
               {visible.map((record) => (
                 <tr key={record.id}>
+                  {(() => { const profile = record.personId && record.personId in PROFILES ? PROFILES[record.personId as keyof typeof PROFILES] : null; return (<>
                   <Td>
                     {record.personId && record.personId in PROFILES ? (
                       <Link href={`/conferences/${conferenceId}/prep/${record.personId}`}>
@@ -133,21 +90,12 @@ export function PrepList({
                       {humanizeToken(record.attendanceConfidence)}
                     </Badge>
                   </Td>
+                  <Td><strong>{profile?.title ?? humanizeToken(record.roleFit)}</strong></Td>
+                  <Td>{profile?.company ?? humanizeToken(record.companyId)}</Td>
                   <Td>
-                    <div className="badge-row">
-                      <Badge>Tier {record.companyTier}</Badge>
-                      <Badge tone={roleTone(record.roleFit)}>{humanizeToken(record.roleFit)}</Badge>
-                    </div>
+                    <Badge tone={prepTone(record.prepStatus)}>{record.prepStatus === "to_contact" ? "Ready to reach out" : humanizeToken(record.prepStatus)}</Badge>
                   </Td>
-                  <Td>
-                    <Badge tone={crmTone(record.crmState)}>{crmLabel(record.crmState)}</Badge>
-                  </Td>
-                  <Td>
-                    <div className="badge-row">
-                      <Badge tone={prepTone(record.prepStatus)}>{humanizeToken(record.prepStatus)}</Badge>
-                      <Badge tone="info">Fictional demo scenario</Badge>
-                    </div>
-                  </Td>
+                  </>); })()}
                 </tr>
               ))}
             </tbody>

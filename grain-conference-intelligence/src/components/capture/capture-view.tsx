@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { Alert } from "@/components/ui/alert";
 import { Button, ButtonRow } from "@/components/ui/button";
@@ -22,13 +23,16 @@ const EMPTY_FORM: CaptureDraft = {
   nextStep: "",
 };
 
-export function CaptureView() {
+export function CaptureView({ meetingId }: { meetingId?: string }) {
   const { state, dispatch } = useWorkspace();
+  const router = useRouter();
   const planned = state.plannedMeetings.filter((meeting) => meeting.outcome === "planned");
   const [activeId, setActiveId] = useState<string | null>(null);
   const [formVisible, setFormVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setField] = useState<CaptureDraft>(EMPTY_FORM);
+  const [query, setQuery] = useState("");
+  const [conferenceFilter, setConferenceFilter] = useState("all");
 
   const conferenceName = useMemo(
     () =>
@@ -39,6 +43,11 @@ export function CaptureView() {
   );
 
   const capturedCount = state.plannedMeetings.filter((meeting) => meeting.outcome === "met").length;
+  const visibleMeetings = planned.filter((meeting) => {
+    const person = meeting.personId in PROFILES ? PROFILES[meeting.personId as FullProfileId] : null;
+    const haystack = `${person?.name ?? meeting.personId} ${person?.company ?? ""} ${meeting.context}`.toLowerCase();
+    return (conferenceFilter === "all" || meeting.conferenceId === conferenceFilter) && haystack.includes(query.toLowerCase());
+  });
 
   function formFromMeeting(plannedMeetingId: string): CaptureDraft {
     const saved = state.captureDrafts[plannedMeetingId];
@@ -69,6 +78,7 @@ export function CaptureView() {
   }
 
   function openMet(plannedMeetingId: string) {
+    router.push(`/capture/${plannedMeetingId}`);
     setActiveId(plannedMeetingId);
     setError(null);
     setField(formFromMeeting(plannedMeetingId));
@@ -82,6 +92,17 @@ export function CaptureView() {
     setField(saved ?? EMPTY_FORM);
     setFormVisible(true);
   }
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => {
+    if (meetingId) {
+      // Hydrate the dedicated meeting route from the persisted meeting record.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setActiveId(meetingId);
+      setField(formFromMeeting(meetingId));
+      setFormVisible(true);
+    }
+  }, [meetingId]);
 
   function save() {
     setError(null);
@@ -110,26 +131,28 @@ export function CaptureView() {
   return (
     <section className="page-stack" aria-labelledby="capture-title">
       <PageHeader
-        eyebrow="Field capture"
-        title="You planned to meet"
+        eyebrow="Meeting workspace"
+        title="Scheduled meetings"
         titleId="capture-title"
-        description="Mark Met to capture one actual encounter. Didn’t meet records the plan outcome only."
+        description="Keep upcoming meetings organized and capture updates immediately after each conversation."
       />
-      <p className="capture-progress">
+      {!meetingId ? <p className="capture-progress">
         {planned.length} planned {planned.length === 1 ? "meeting" : "meetings"} remaining · {capturedCount} captured
-      </p>
-      <ul className="conference-list">
-        {planned.map((item) => {
+      </p> : null}
+      {!meetingId ? <div className="meeting-filters"><input aria-label="Search scheduled meetings" placeholder="Search contacts or companies" value={query} onChange={(event) => setQuery(event.target.value)} /><select aria-label="Filter by conference" value={conferenceFilter} onChange={(event) => setConferenceFilter(event.target.value)}><option value="all">All conferences</option>{CONFERENCES.filter((conference) => planned.some((meeting) => meeting.conferenceId === conference.id)).map((conference) => <option key={conference.id} value={conference.id}>{conference.name}</option>)}</select></div> : null}
+      {!meetingId ? <ul className="conference-list">
+        {visibleMeetings.map((item) => {
           const person = item.personId in PROFILES ? PROFILES[item.personId as FullProfileId] : null;
           return (
             <li key={item.id}>
-              <article className="conference-card">
-                <div>
-                  <h2>{person?.name ?? item.personId}</h2>
-                  <p>{item.context}</p>
-                  <ButtonRow>
+              <article className="meeting-row">
+                <div className="meeting-row-person"><h2>{person?.name ?? item.personId}</h2><span>{person?.title ?? "Contact"}</span><strong>{person?.company ?? "Company"}</strong></div>
+                <div className="meeting-row-detail"><span>Conference</span><strong>{CONFERENCES.find((conference) => conference.id === item.conferenceId || conference.demoScenarioId === item.conferenceId)?.name ?? item.conferenceId}</strong></div>
+                <div className="meeting-row-detail"><span>Scheduled</span><strong>{new Date(item.scheduledFor).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}</strong></div>
+                <div className="meeting-row-detail"><span>Context</span><strong>{item.context}</strong></div>
+                <div className="meeting-row-actions"><ButtonRow>
                     <Button variant="primary" onClick={() => openMet(item.id)}>
-                      Met
+                      Update
                     </Button>
                     <Button
                       onClick={() =>
@@ -142,14 +165,13 @@ export function CaptureView() {
                     >
                       Didn’t meet
                     </Button>
-                  </ButtonRow>
-                </div>
+                  </ButtonRow></div>
               </article>
             </li>
           );
         })}
-      </ul>
-      <Button onClick={openUnplanned}>Capture unplanned meeting</Button>
+      </ul> : null}
+      {!meetingId ? <Button onClick={openUnplanned}>Update an unplanned meeting</Button> : null}
       {formVisible ? (
         <form
           className="ui-card capture-shell"
@@ -158,7 +180,8 @@ export function CaptureView() {
             save();
           }}
         >
-          <h2>Save meeting</h2>
+          <h2>{meetingId ? "Update meeting" : "Unplanned meeting"}</h2>
+          <p className="capture-voice-placeholder">Voice notes will appear here when the voice capture module is merged.</p>
           {error ? <Alert tone="warning">{error}</Alert> : null}
           <label className="field-label">
             Name

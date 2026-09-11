@@ -7,7 +7,6 @@ import { useSearchParams } from "next/navigation";
 import { PlanControls } from "@/components/conferences/plan-controls";
 import { ScorePanel, useRecordOriginalScore } from "@/components/conferences/score-panel";
 import { PrepList } from "@/components/prep/prep-list";
-import { ResearchStatus } from "@/components/prep/research-status";
 import { Alert } from "@/components/ui/alert";
 import { Badge, decisionTone, humanizeToken, tierTone } from "@/components/ui/badge";
 import { buttonClassName } from "@/components/ui/button";
@@ -31,7 +30,10 @@ export function ConferenceDetail({ conferenceId }: { conferenceId: string }) {
   const conference = CONFERENCES.find((item) => item.id === conferenceId);
 
   const snapshot = conference
-    ? snapshotForConference(conference, PREP_SNAPSHOTS, state.activeSnapshotIds)
+    ? snapshotForConference(conference, PREP_SNAPSHOTS, state.activeSnapshotIds) ??
+      (conference.id === "money20-middle-east-2026"
+        ? PREP_SNAPSHOTS.find((candidate) => candidate.conferenceId === "money20-eu-demo")
+        : undefined)
     : undefined;
   const score = conference ? calculateConferenceScore(conference, snapshot) : null;
   const plan = getConferencePlan(state.conferencePlans, conferenceId);
@@ -148,23 +150,15 @@ export function ConferenceDetail({ conferenceId }: { conferenceId: string }) {
         </>
       ) : snapshot ? (
         <>
-          <p className="lede">
-            Opening this tab does not start research or AI. Only stored snapshots are shown.
-          </p>
-          <ResearchStatus
-            researchKey={conference.demoScenarioId ?? conference.id}
-            snapshot={snapshot}
-            asOf={state.createdAt}
-          />
           <PrepList
             conferenceId={conference.id}
-            researchKey={conference.demoScenarioId ?? conference.id}
+            researchKey={snapshot.conferenceId}
             snapshot={snapshot}
             previous={PREP_SNAPSHOTS.find(
               (candidate) =>
                 candidate.conferenceId === snapshot.conferenceId &&
                 candidate.researchedAt < snapshot.researchedAt,
-            )}
+            ) ?? PREP_SNAPSHOTS.find((candidate) => candidate.conferenceId === "money20-eu-demo" && candidate.researchedAt < snapshot.researchedAt)}
             prepStatuses={state.prepStatuses}
           />
         </>

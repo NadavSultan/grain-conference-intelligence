@@ -308,6 +308,7 @@ export type WorkspaceAction =
       subject?: string | null;
       body: string;
     }
+  | { type: "timeline/add-outreach"; personId: string; conferenceId: string; company: string; role: string; summary: string; occurredAt: string }
   | {
       type: "capture/save";
       name: string;
