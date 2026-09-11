@@ -1965,3 +1965,82 @@ body { background: var(--surface); color: var(--ink); }
   .catalog-timeline li > div:nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
   .conference-detail-panel { padding: 18px; }
 }
+
+/* -------------------------------------------------------------------------- */
+/* Voice capture                                                              */
+/* -------------------------------------------------------------------------- */
+
+.voice-capture {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--info-bg);
+  min-width: 0;
+}
+
+.voice-capture-head h3 {
+  margin: 0 0 4px;
+  font-size: var(--text-md);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink-strong);
+}
+
+.voice-capture .provenance {
+  margin: 0;
+}
+
+.voice-capture .ui-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.voice-capture-status {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--secondary);
+}
+
+.voice-transcript {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--canvas);
+  border: 1px solid var(--border);
+}
+
+.voice-transcript p:last-child {
+  margin: 4px 0 0;
+  font-size: var(--text-sm);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* A field the model filled from speech, so the rep can see what to check. */
+.field-heard > input {
+  border-color: var(--warning);
+  background: var(--warning-bg);
+}
+
+.email-disclaimer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 620px) {
+  .voice-capture {
+    padding: 12px;
+  }
+  .voice-capture .ui-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
