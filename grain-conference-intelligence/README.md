@@ -32,7 +32,9 @@ The key is encrypted with AES-256-GCM and stored only in a short-lived HttpOnly 
 
 A deployment owner may set `OPENAI_API_KEY` as a server environment variable. Live mode uses a valid user-session key first, and the deployment key only when no session key is present. A rejected session key is not silently replaced by the deployment key.
 
-Also set `OPENAI_MODEL=gpt-5.4-mini` if you want to override the default model name.
+Also set `OPENAI_MODEL=gpt-5.4-mini` if you want to override the default model name. Voice capture
+uses its own pair, overridable with `OPENAI_CAPTURE_MODEL` (default `gpt-5.6-luna`) and
+`OPENAI_TRANSCRIBE_MODEL` (default `gpt-transcribe`).
 
 ### Required server secrets
 
@@ -62,6 +64,31 @@ Playwright starts the Next.js dev server when needed. Install browsers once with
 
 HubSpot remains simulated. This application does not collect a HubSpot credential.
 
+## Voice capture
+
+On Capture, **Record** turns a spoken note into filled form fields so a rep does not type on a show
+floor. Audio goes to `POST /api/capture/transcribe` (`gpt-transcribe`), the transcript goes to
+`POST /api/capture/extract` (`gpt-5.6-luna` at `reasoning.effort: "low"`), and the result fills the
+existing capture form. Nothing is written to the workspace until the rep chooses **Save encounter**,
+so identity resolution, idempotency, and match review are unchanged.
+
+The model may fill name, company, role, note, email, LinkedIn, and next step. It is never asked for
+the conference or the timestamp: a guessed date would corrupt the encounter timeline that
+warming/stalled eligibility reads, so both come from application context.
+
+A spoken email is hearsay. It is shown with a disclaimer, held out of the saved encounter, and
+reaches the record only after the rep confirms it. A dictated address (`marcus at northwind dot
+com`) is normalized; a half-heard one is dropped rather than repaired. Typed addresses are
+unaffected.
+
+Voice capture has its own allowance of twenty extractions per browser, tracked in a signed HttpOnly
+cookie (`grain-capture-usage`) separate from the Copilot's five, so demoing one cannot exhaust the
+other. Transcription does not spend the allowance; extraction does. Both routes require a same-origin
+request, an OpenAI key, and `AI_USAGE_SECRET`, and fail to a typed-entry path rather than an error.
+
+Live voice capture is NOT VERIFIED: the routes are covered by mocked tests, and no real
+`gpt-transcribe` or `gpt-5.6-luna` call has been exercised.
+
 ## Scoring and Q
 
 Scores use a 100-point model: vertical fit 35, buyer-role density 25 (15 sourced audience-role + `min(10, Q)`), FX 20, meeting accessibility 10, trip efficiency 10. Q is unique named current-edition Confirmed people at Tier A companies in decision-maker or influencer roles. Missing research stores `researchedRoomStatus: "unknown"` with 0 provisional room points. Audience size is context only. Original score snapshots and human attend/watch/skip decisions are never overwritten by a later snapshot.
@@ -81,6 +108,7 @@ Workspace state is stored in this browser under `grain-conference-intelligence:v
 ## Known limitations
 
 - Live OpenAI is NOT VERIFIED until a trusted key is configured and one Marcus brief is exercised.
+- Live voice capture is NOT VERIFIED until a trusted key is configured and one recording is exercised.
 - HubSpot is a readable, persisted simulation. Live HubSpot is P1 / not included in P0.
 - Illustrative 2–4 June Money20/20 outreach dates are warnings, not the verified 2027 schedule.
 - Vercel deployment is pending separate authorization.
