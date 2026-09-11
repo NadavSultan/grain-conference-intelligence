@@ -94,6 +94,44 @@ test("planning and relationship timeline badges stay compact", async ({ page }) 
   }
 });
 
+test("planning cards fit the 320px workspace without overflow", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await page.goto("/planning");
+  await expect(page.getByRole("heading", { name: "Year list" })).toBeVisible();
+  await expect(page.locator(".conference-card").first()).toBeVisible();
+
+  const measurements = await page.evaluate(() => {
+    const workspace = document.querySelector<HTMLElement>(".workspace-body");
+    if (!workspace) return null;
+    const workspaceBox = workspace.getBoundingClientRect();
+    const cards = [...document.querySelectorAll<HTMLElement>(".conference-card")].filter(
+      (card) => getComputedStyle(card).display !== "none",
+    );
+    const badges = cards.flatMap((card) =>
+      [...card.querySelectorAll<HTMLElement>(".ui-badge")].map((badge) => {
+        const box = badge.getBoundingClientRect();
+        return { width: box.width, height: box.height, visible: box.width > 0 && box.height > 0 };
+      }),
+    );
+    return {
+      workspaceClientWidth: workspace.clientWidth,
+      workspaceScrollWidth: workspace.scrollWidth,
+      cards: cards.map((card) => {
+        const box = card.getBoundingClientRect();
+        return { left: box.left, right: box.right, workspaceLeft: workspaceBox.left, workspaceRight: workspaceBox.right };
+      }),
+      badges,
+    };
+  });
+
+  expect(measurements).not.toBeNull();
+  expect(measurements?.workspaceScrollWidth).toBeLessThanOrEqual(measurements?.workspaceClientWidth ?? 0);
+  expect(measurements?.cards.length).toBeGreaterThan(0);
+  expect(measurements?.cards.every((card) => card.left >= card.workspaceLeft && card.right <= card.workspaceRight)).toBe(true);
+  expect(measurements?.badges.length).toBeGreaterThan(0);
+  expect(measurements?.badges.every((badge) => badge.visible && badge.height <= 42 && badge.width >= 20)).toBe(true);
+});
+
 test("mobile drawer wordmark remains visible and selected conference metadata has spacing", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/conferences");

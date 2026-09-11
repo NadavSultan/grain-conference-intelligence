@@ -435,6 +435,28 @@ ol {
   }
 }
 
+@media (max-width: 350px) {
+  .month-group .conference-card {
+    flex-direction: column;
+  }
+
+  .month-group .conference-card > div:first-child {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .month-group .conference-card h3,
+  .month-group .conference-card p,
+  .month-group .conference-card a {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .month-group .conference-card > .badge-row {
+    width: 100%;
+  }
+}
+
 /* -------------------------------------------------------------------------- */
 /* Wordmark                                                                   */
 /* -------------------------------------------------------------------------- */
