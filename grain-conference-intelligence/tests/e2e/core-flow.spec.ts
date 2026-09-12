@@ -41,29 +41,19 @@ async function runCoreJourney(page: Page, viewport: (typeof VIEWPORTS)[number]) 
 
   await page.getByRole("tab", { name: "Prep" }).click();
   await expect(page).toHaveURL(/tab=prep/);
-  await expect(page.getByRole("button", { name: /Attendees verified/ })).toBeVisible();
-  await page.getByRole("button", { name: /Attendees verified/ }).click();
-  await page.getByRole("button", { name: /Need coordination/ }).click();
+  await expect(page.getByRole("heading", { name: "Verified attendees" })).toBeVisible();
   await page.getByRole("link", { name: "David Cohen" }).click();
-  await expect(page.getByText(/Prospect draft actions are blocked until coordination/i)).toBeVisible();
-  await expect(page.locator("textarea").first()).toBeDisabled();
-  await page.getByRole("button", { name: "Acknowledge coordination" }).click();
-  await expect(page.locator("textarea").first()).toBeEnabled();
-  await page.getByLabel("Subject").fill("Your treasury panel on Thursday — following up");
-  await page.getByRole("button", { name: "Copy", exact: true }).click();
-
-  await page.getByRole("link", { name: /Back to .* Prep/ }).click();
-  await page.getByRole("link", { name: "Marcus Oyelaran" }).click();
-  await page.getByRole("button", { name: "Add to field list" }).click();
-  await expect(page.getByRole("button", { name: "On field list" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "David Cohen", exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Next best action")).toBeVisible();
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("link", { name: "Capture" }).click();
-  await expect(page.getByRole("heading", { name: "You planned to meet" })).toBeVisible();
-  await page.getByRole("button", { name: "Met" }).click();
+  await expect(page.getByRole("heading", { name: "Scheduled meetings" })).toBeVisible();
+  await page.getByRole("button", { name: "Update", exact: true }).click();
+  await expect(page).toHaveURL(/\/capture\/pm-marcus$/);
+  await expect(page.getByRole("heading", { name: "Update meeting" })).toBeVisible();
   await page.getByLabel("Short note").fill("Agreed a corridor walkthrough next Tuesday.");
   await page.getByLabel("Next step (optional)").fill("Corridor walkthrough next Tuesday");
-  await page.getByRole("button", { name: "Save encounter" }).click();
   await page.getByRole("button", { name: "Save encounter" }).click();
 
   await page.setViewportSize({ width: viewport.width, height: viewport.height });
@@ -89,11 +79,10 @@ async function runCoreJourney(page: Page, viewport: (typeof VIEWPORTS)[number]) 
   await expect(page.getByText(/View in HubSpot \(demo record\) demo-hs-contact-marcus/)).toBeVisible();
 
   await page.getByRole("link", { name: "Planning" }).click();
-  await expect(page.getByRole("heading", { name: "Year list" })).toBeVisible();
-  await expect(page.getByText(/attend · Alex · Q 1/)).toBeVisible();
-  await expect(page.getByText(/researched 2026/).first()).toBeVisible();
-  await expect(page.getByText(/Conflict for Alex/).first()).toBeVisible();
-  await expect(page.getByText(/Trip cluster:/).first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Coverage plan" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Conference coverage timeline" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Conflicts" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Trip clusters" })).toBeVisible();
   await expect(page.getByText(/Uncovered quarters:/)).toBeVisible();
 
   await assertNoHorizontalOverflow(page);

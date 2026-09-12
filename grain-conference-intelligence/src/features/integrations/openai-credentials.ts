@@ -23,10 +23,29 @@ export function openaiModel(): string {
   return process.env.OPENAI_MODEL?.trim() || OPENAI_MODEL_DEFAULT;
 }
 
+/**
+ * Server secrets are required in production and fail closed without them. Under
+ * `next dev` only, a random per-process secret stands in so a fresh checkout can
+ * paste a key into Settings without hand-writing `.env.local` first. It is never
+ * persisted: restarting the dev server invalidates anything signed with it.
+ */
+const developmentSecrets = new Map<string, string>();
+
+function developmentFallbackSecret(name: string): string | null {
+  if (process.env.NODE_ENV !== "development") return null;
+  const existing = developmentSecrets.get(name);
+  if (existing) return existing;
+  const generated = randomBytes(32).toString("hex");
+  developmentSecrets.set(name, generated);
+  return generated;
+}
+
 export function integrationCredentialSecret(): string | null {
-  const secret = process.env.INTEGRATION_CREDENTIAL_SECRET;
-  if (!secret) return null;
-  return secret;
+  return process.env.INTEGRATION_CREDENTIAL_SECRET || developmentFallbackSecret("integration");
+}
+
+export function aiUsageSecret(): string | null {
+  return process.env.AI_USAGE_SECRET || developmentFallbackSecret("usage");
 }
 
 export function isSameOrigin(request: Request): boolean {
@@ -124,7 +143,7 @@ export function credentialStatus(request: Request): OpenAICredentialStatus {
   const configured = resolved.source !== "none";
   return {
     configured,
-    liveConfigured: configured && Boolean(process.env.AI_USAGE_SECRET),
+    liveConfigured: configured && Boolean(aiUsageSecret()),
     source: resolved.source,
     model: openaiModel(),
   };
