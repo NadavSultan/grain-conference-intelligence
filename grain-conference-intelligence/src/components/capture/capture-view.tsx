@@ -4,11 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Alert } from "@/components/ui/alert";
+import { VoiceCapturePanel } from "@/components/capture/voice-capture-panel";
 import { Button, ButtonRow } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { CONFERENCES } from "@/data/conferences";
 import { PROFILES, type FullProfileId } from "@/data/prep-snapshots";
 import { useWorkspace } from "@/workspace/provider";
+import type { VoiceCaptureResult } from "@/hooks/use-voice-capture";
+import { emailForSave, type CaptureExtractionField } from "@/features/capture/voice-extraction";
 import type { CaptureDraft } from "@/domain/types";
 
 const EMPTY_FORM: CaptureDraft = {
@@ -33,6 +36,9 @@ export function CaptureView({ meetingId }: { meetingId?: string }) {
   const [form, setField] = useState<CaptureDraft>(EMPTY_FORM);
   const [query, setQuery] = useState("");
   const [conferenceFilter, setConferenceFilter] = useState("all");
+  const [voiceFilled, setVoiceFilled] = useState<CaptureExtractionField[]>([]);
+  const [emailFromVoice, setEmailFromVoice] = useState(false);
+  const [emailConfirmed, setEmailConfirmed] = useState(false);
 
   const conferenceName = useMemo(
     () =>
@@ -77,10 +83,34 @@ export function CaptureView({ meetingId }: { meetingId?: string }) {
     });
   }
 
+  function resetVoice() {
+    setVoiceFilled([]);
+    setEmailFromVoice(false);
+    setEmailConfirmed(false);
+  }
+
+  // A spoken email is hearsay: it is held out of the saved draft until the rep confirms it.
+  const emailPending = emailFromVoice && !emailConfirmed;
+
+  function applyVoice(result: VoiceCaptureResult) {
+    setField((current) => {
+      const next = { ...current };
+      for (const field of result.filled) {
+        next[field] = result.extraction[field];
+      }
+      return next;
+    });
+    setVoiceFilled(result.filled);
+    const heardEmail = result.filled.includes("email");
+    setEmailFromVoice(heardEmail);
+    if (heardEmail) setEmailConfirmed(false);
+  }
+
   function openMet(plannedMeetingId: string) {
     router.push(`/capture/${plannedMeetingId}`);
     setActiveId(plannedMeetingId);
     setError(null);
+    resetVoice();
     setField(formFromMeeting(plannedMeetingId));
     setFormVisible(true);
   }
@@ -89,6 +119,7 @@ export function CaptureView({ meetingId }: { meetingId?: string }) {
     const saved = state.captureDrafts.unplanned;
     setActiveId(null);
     setError(null);
+    resetVoice();
     setField(saved ?? EMPTY_FORM);
     setFormVisible(true);
   }
@@ -99,6 +130,7 @@ export function CaptureView({ meetingId }: { meetingId?: string }) {
       // Hydrate the dedicated meeting route from the persisted meeting record.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveId(meetingId);
+      resetVoice();
       setField(formFromMeeting(meetingId));
       setFormVisible(true);
     }
@@ -120,7 +152,7 @@ export function CaptureView({ meetingId }: { meetingId?: string }) {
       occurredAt: form.occurredAt,
       note: form.note.trim(),
       role: form.role.trim(),
-      email: form.email.trim() || undefined,
+      email: emailForSave(form.email, emailFromVoice, emailConfirmed),
       linkedIn: form.linkedIn.trim() || undefined,
       nextStep: form.nextStep.trim() || undefined,
       reciprocal: Boolean(form.nextStep.trim()),
@@ -181,8 +213,8 @@ export function CaptureView({ meetingId }: { meetingId?: string }) {
           }}
         >
           <h2>{meetingId ? "Update meeting" : "Unplanned meeting"}</h2>
-          <p className="capture-voice-placeholder">Voice notes will appear here when the voice capture module is merged.</p>
           {error ? <Alert tone="warning">{error}</Alert> : null}
+          <VoiceCapturePanel onResult={applyVoice} />
           <label className="field-label">
             Name
             <input
@@ -212,10 +244,42 @@ export function CaptureView({ meetingId }: { meetingId?: string }) {
             Role (optional)
             <input value={form.role} onChange={(event) => setField({ ...form, role: event.target.value })} />
           </label>
-          <label className="field-label">
+          <label className={voiceFilled.includes("email") ? "field-label field-heard" : "field-label"}>
             Verified email (optional)
-            <input value={form.email} onChange={(event) => setField({ ...form, email: event.target.value })} />
+            <input
+              value={form.email}
+              aria-describedby={emailPending ? "email-heard-disclaimer" : undefined}
+              onChange={(event) => {
+                setField({ ...form, email: event.target.value });
+                setEmailFromVoice(false);
+                setEmailConfirmed(false);
+              }}
+            />
           </label>
+          {emailPending ? (
+            <Alert tone="warning" className="email-disclaimer">
+              <span id="email-heard-disclaimer">
+                Heard “{form.email}” in your recording. A spoken address is not verified: confirm it
+                is correct, or edit it. It is not saved with this encounter until you confirm.
+              </span>
+              <ButtonRow>
+                <Button variant="warning" onClick={() => setEmailConfirmed(true)}>
+                  Confirm this is the email
+                </Button>
+                <Button
+                  onClick={() => {
+                    setField({ ...form, email: "" });
+                    setEmailFromVoice(false);
+                  }}
+                >
+                  Discard it
+                </Button>
+              </ButtonRow>
+            </Alert>
+          ) : null}
+          {emailFromVoice && emailConfirmed ? (
+            <p className="provenance">Spoken email confirmed by you. It will be saved.</p>
+          ) : null}
           <label className="field-label">
             LinkedIn (optional)
             <input

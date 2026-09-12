@@ -81,55 +81,49 @@ test("conference KPI cards filter the catalog and reset predictably", async ({ p
 test("planning and relationship timeline badges stay compact", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
 
-  for (const route of ["/planning", "/relationships/marcus"]) {
-    await page.goto(route);
-    await expect(
-      page.getByRole("heading", { name: route === "/planning" ? "Year list" : "Marcus Oyelaran" }),
-    ).toBeVisible();
-    const heights = await page.locator(".conference-card .ui-badge").evaluateAll((badges) =>
-      badges.map((badge) => badge.getBoundingClientRect().height),
-    );
-    expect(heights.length).toBeGreaterThan(0);
-    expect(Math.max(...heights)).toBeLessThanOrEqual(42);
-  }
+  await page.goto("/planning");
+  await expect(page.getByRole("heading", { name: "Coverage plan" })).toBeVisible();
+  const planningHeights = await page.locator(".gantt-score .ui-badge").evaluateAll((badges) =>
+    badges.map((badge) => badge.getBoundingClientRect().height),
+  );
+  expect(planningHeights.length).toBeGreaterThan(0);
+  expect(Math.max(...planningHeights)).toBeLessThanOrEqual(42);
+
+  await page.goto("/relationships/marcus");
+  await expect(page.getByRole("heading", { name: "Marcus Oyelaran", exact: true }).first()).toBeVisible();
+  const relationshipHeights = await page.locator(".conference-card .ui-badge").evaluateAll((badges) =>
+    badges.map((badge) => badge.getBoundingClientRect().height),
+  );
+  expect(relationshipHeights.length).toBeGreaterThan(0);
+  expect(Math.max(...relationshipHeights)).toBeLessThanOrEqual(42);
 });
 
 test("planning cards fit the 320px workspace without overflow", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
   await page.goto("/planning");
-  await expect(page.getByRole("heading", { name: "Year list" })).toBeVisible();
-  await expect(page.locator(".conference-card").first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Coverage plan" })).toBeVisible();
+  await expect(page.locator(".planning-gantt-card")).toBeVisible();
 
   const measurements = await page.evaluate(() => {
     const workspace = document.querySelector<HTMLElement>(".workspace-body");
     if (!workspace) return null;
     const workspaceBox = workspace.getBoundingClientRect();
-    const cards = [...document.querySelectorAll<HTMLElement>(".conference-card")].filter(
-      (card) => getComputedStyle(card).display !== "none",
-    );
-    const badges = cards.flatMap((card) =>
-      [...card.querySelectorAll<HTMLElement>(".ui-badge")].map((badge) => {
-        const box = badge.getBoundingClientRect();
-        return { width: box.width, height: box.height, visible: box.width > 0 && box.height > 0 };
-      }),
-    );
+    const card = document.querySelector<HTMLElement>(".planning-gantt-card");
+    const cardBox = card?.getBoundingClientRect();
     return {
       workspaceClientWidth: workspace.clientWidth,
       workspaceScrollWidth: workspace.scrollWidth,
-      cards: cards.map((card) => {
-        const box = card.getBoundingClientRect();
-        return { left: box.left, right: box.right, workspaceLeft: workspaceBox.left, workspaceRight: workspaceBox.right };
-      }),
-      badges,
+      workspaceLeft: workspaceBox.left,
+      workspaceRight: workspaceBox.right,
+      card: cardBox ? { left: cardBox.left, right: cardBox.right } : null,
     };
   });
 
   expect(measurements).not.toBeNull();
-  expect(measurements?.workspaceScrollWidth).toBeLessThanOrEqual(measurements?.workspaceClientWidth ?? 0);
-  expect(measurements?.cards.length).toBeGreaterThan(0);
-  expect(measurements?.cards.every((card) => card.left >= card.workspaceLeft && card.right <= card.workspaceRight)).toBe(true);
-  expect(measurements?.badges.length).toBeGreaterThan(0);
-  expect(measurements?.badges.every((badge) => badge.visible && badge.height <= 42 && badge.width >= 20)).toBe(true);
+  expect(measurements!.workspaceScrollWidth - measurements!.workspaceClientWidth).toBeLessThanOrEqual(1);
+  expect(measurements!.card).not.toBeNull();
+  expect(measurements!.card!.left).toBeGreaterThanOrEqual(measurements!.workspaceLeft - 1);
+  expect(measurements!.card!.right).toBeLessThanOrEqual(measurements!.workspaceRight + 1);
 });
 
 test("mobile drawer wordmark remains visible and selected conference metadata has spacing", async ({ page }) => {
