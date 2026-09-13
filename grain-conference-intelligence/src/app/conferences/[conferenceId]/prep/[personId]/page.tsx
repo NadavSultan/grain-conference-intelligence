@@ -1,16 +1,16 @@
 import { Suspense } from "react";
 
-import { OutreachProfile } from "@/components/prep/outreach-profile";
+import { RelationshipDetail } from "@/components/relationships/relationship-detail";
 
 export default async function PrepPersonPage({
   params,
 }: {
   params: Promise<{ conferenceId: string; personId: string }>;
 }) {
-  const { conferenceId, personId } = await params;
+  const { personId } = await params;
   return (
     <Suspense fallback={<p className="workspace-loading">Loading outreach profile…</p>}>
-      <OutreachProfile conferenceId={conferenceId} personId={personId} />
+      <RelationshipDetail contactId={personId} />
     </Suspense>
   );
 }

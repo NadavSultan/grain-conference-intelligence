@@ -1,8 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { CalendarClock, ClipboardList } from "lucide-react";
 import { useMemo } from "react";
 
+import { Card } from "@/components/ui/card";
+import { buttonClassName } from "@/components/ui/button";
+import { MetricCard } from "@/components/ui/metric-card";
+import { PageHeader } from "@/components/ui/page-header";
 import { CONFERENCES } from "@/data/conferences";
 import { PREP_SNAPSHOTS } from "@/data/prep-snapshots";
 import { getConferencePlan, selectFocusItems } from "@/features/conferences/planning";
@@ -24,20 +29,50 @@ export function FocusView() {
 
   const undecided = items.filter((item) => item.kind === "undecided_conference");
   const prepLinks = items.filter((item) => item.kind === "prep_link");
+  const plannedMeetings = state.plannedMeetings.filter((meeting) => meeting.outcome === "planned").length;
+  const capturedMeetings = state.timeline.filter((entry) => entry.kind === "actual_encounter").length;
 
   return (
     <section className="page-stack" aria-labelledby="focus-title">
-      <div>
-        <p className="eyebrow">Today’s Focus</p>
-        <h1 id="focus-title">Decide coverage, then open cached Prep</h1>
-        <p className="lede">
-          Focus only lists conferences still awaiting attend/watch/skip and direct Prep
-          links. Opening these pages never starts research or AI.
-        </p>
+      <PageHeader
+        eyebrow="Wednesday, May 20"
+        title="Today"
+        titleId="focus-title"
+        description="Decide coverage, prepare the right people, and close the loop after every meeting."
+        actions={<Link href="/capture" className={buttonClassName("primary")}>Capture meeting</Link>}
+      />
+      <div className="metric-grid">
+        <MetricCard
+          label="Decisions needed"
+          value={undecided.length}
+          hint="Awaiting attend, watch, or skip"
+          highlighted={undecided.length > 0}
+          href="/conferences"
+        />
+        <MetricCard
+          label="Cached Prep"
+          value={prepLinks.length}
+          hint="Stored snapshots only. Opening Prep does not research live sources."
+          href="/conferences"
+        />
+        <MetricCard
+          label="Planned meetings"
+          value={plannedMeetings}
+          hint="Awaiting an encounter outcome"
+          href="/capture"
+        />
+        <MetricCard
+          label="Meetings captured"
+          value={capturedMeetings}
+          hint="Persisted actual encounters"
+          href="/relationships"
+        />
       </div>
       <div className="focus-grid">
-        <article className="workspace-card compact">
-          <h2>Undecided upcoming conferences</h2>
+        <Card className="compact">
+          <h2>
+            <CalendarClock size={16} aria-hidden="true" /> Undecided upcoming conferences
+          </h2>
           {undecided.length === 0 ? (
             <p className="empty">No upcoming conferences are waiting on a decision.</p>
           ) : (
@@ -56,9 +91,11 @@ export function FocusView() {
               })}
             </ul>
           )}
-        </article>
-        <article className="workspace-card compact">
-          <h2>Cached Prep</h2>
+        </Card>
+        <Card className="compact">
+          <h2>
+            <ClipboardList size={16} aria-hidden="true" /> Cached Prep
+          </h2>
           {prepLinks.length === 0 ? (
             <p className="empty">No cached Prep events are linked.</p>
           ) : (
@@ -74,7 +111,7 @@ export function FocusView() {
               })}
             </ul>
           )}
-        </article>
+        </Card>
       </div>
     </section>
   );

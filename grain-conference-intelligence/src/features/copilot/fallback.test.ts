@@ -32,14 +32,12 @@ describe("deterministic copilot fallback", () => {
     expect(buildFallbackBrief(marcus).state).toBe("unclear");
   });
 
-  it("names the actual encounter count and lists available evidence IDs", () => {
+  it("names the actual encounter count without exposing raw evidence IDs in the summary", () => {
     const marcus = contextFor("marcus", true);
     const brief = buildFallbackBrief(marcus);
     expect(brief.summary).toContain(String(marcus.eligibility.encounterCount));
+    expect(brief.summary).not.toMatch(/available evidence|encounter IDs|research evidence IDs/i);
     expect(brief.evidenceEncounterIds.every((id) => marcus.allowedEncounterIds.includes(id))).toBe(
-      true,
-    );
-    expect(marcus.allowedEncounterIds.every((id) => brief.summary.includes(id) || brief.evidenceEncounterIds.includes(id))).toBe(
       true,
     );
     expect(brief.evidenceSignalIds.every((id) => marcus.allowedSignalIds.includes(id))).toBe(true);

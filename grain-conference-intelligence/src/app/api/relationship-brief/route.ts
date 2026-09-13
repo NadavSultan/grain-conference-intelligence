@@ -1,8 +1,7 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
-
 import OpenAI from "openai";
+import { z } from "zod";
 
-import type { TimelineEntry } from "@/domain/types";
+import { timelineEntrySchema } from "@/domain/schemas";
 import { buildFallbackBrief } from "@/features/copilot/fallback";
 import { COPILOT_SYSTEM_PROMPT, copilotUserPrompt } from "@/features/copilot/prompt";
 import {
@@ -11,55 +10,111 @@ import {
   validateRelationshipBrief,
   type CopilotEvidenceContext,
 } from "@/features/copilot/schema";
+import {
+  aiUsageSecret,
+  isSameOrigin,
+  openaiModel,
+  resolveOpenAIApiKey,
+} from "@/features/integrations/openai-credentials";
 import { deriveRelationshipEligibility } from "@/features/relationships/eligibility";
 
-export const USAGE_COOKIE = "grain-ai-usage";
-const USAGE_MAX = 5;
+import { jsonWithUsageCookie, readUsageRemaining } from "./usage";
 
-interface BriefRequest {
-  personId: string;
-  companyId: string;
-  timeline: TimelineEntry[];
-  evidence: Array<{ id: string; personId: string | null; companyId: string; claim?: string }>;
-  canDraftEmail: boolean;
-  canDraftLinkedIn: boolean;
-}
+const evidenceInputSchema = z.object({
+  id: z.string().min(1),
+  personId: z.string().nullable(),
+  companyId: z.string().min(1),
+  claim: z.string().optional(),
+});
 
-export async function GET(): Promise<Response> {
+const briefRequestSchema = z.object({
+  mode: z.enum(["demo", "live"]),
+  personId: z.string().min(1),
+  companyId: z.string().min(1),
+  timeline: z.array(timelineEntrySchema),
+  evidence: z.array(evidenceInputSchema),
+  canDraftEmail: z.boolean(),
+  canDraftLinkedIn: z.boolean(),
+});
+
+type BriefRequest = z.infer<typeof briefRequestSchema>;
+
+export async function GET(request: Request): Promise<Response> {
+  const resolved = resolveOpenAIApiKey(request);
   return Response.json({
-    liveConfigured: Boolean(process.env.OPENAI_API_KEY && process.env.AI_USAGE_SECRET),
-    model: process.env.OPENAI_MODEL ?? "gpt-5.4-mini",
+    liveConfigured: resolved.source !== "none" && Boolean(aiUsageSecret()),
+    model: openaiModel(),
     hubspotLive: false,
   });
 }
 
-export function signUsageCookie(remaining: number): string {
-  const normalized = Math.max(0, Math.min(USAGE_MAX, remaining));
-  const payload = String(normalized);
-  const hmac = createHmac("sha256", secret()).update(payload).digest("hex");
-  return `${payload}.${hmac}`;
-}
-
 export async function POST(request: Request): Promise<Response> {
-  const remaining = readUsageRemaining(request.headers.get("cookie"));
-  let body: BriefRequest;
-  try {
-    body = (await request.json()) as BriefRequest;
-  } catch {
+  if (!isSameOrigin(request)) {
     return Response.json(
-      { ok: false, code: "invalid_request", retryable: false, fallback: null, usageRemaining: remaining },
-      { status: 400 },
+      { ok: false, code: "forbidden", retryable: false, fallback: null },
+      { status: 403 },
     );
   }
 
+  const contentType = request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase();
+  if (contentType !== "application/json") {
+    return Response.json(
+      { ok: false, code: "invalid_request", retryable: false, fallback: null },
+      { status: 415 },
+    );
+  }
+
+  const remaining = readUsageRemaining(request.headers.get("cookie"));
+  let raw: unknown;
+  try {
+    raw = await request.json();
+  } catch {
+    return invalidRequest(remaining);
+  }
+
+  const parsed = briefRequestSchema.safeParse(raw);
+  if (!parsed.success) {
+    return invalidRequest(remaining);
+  }
+
+  const body = parsed.data;
   const context = contextFromRequest(body);
   const fallback = buildFallbackBrief(context);
 
-  if (!process.env.OPENAI_API_KEY) {
-    return jsonWithCookie(
+  if (body.mode === "demo") {
+    return jsonWithUsageCookie(
+      {
+        ok: true,
+        mode: "demo",
+        brief: fallback,
+        provider: "deterministic-demo",
+        model: "none",
+        generatedAt: new Date().toISOString(),
+        usageRemaining: remaining,
+      },
+      remaining,
+    );
+  }
+
+  if (!aiUsageSecret()) {
+    return Response.json(
       {
         ok: false,
-        code: "missing_key",
+        code: "provider_error",
+        retryable: true,
+        fallback,
+        usageRemaining: remaining,
+      },
+      { status: 503 },
+    );
+  }
+
+  const resolved = resolveOpenAIApiKey(request);
+  if (!resolved.apiKey) {
+    return jsonWithUsageCookie(
+      {
+        ok: false,
+        code: "not_configured",
         retryable: false,
         fallback,
         usageRemaining: remaining,
@@ -69,7 +124,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   if (remaining <= 0) {
-    return jsonWithCookie(
+    return jsonWithUsageCookie(
       {
         ok: false,
         code: "usage_exhausted",
@@ -81,12 +136,14 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
+  const apiKey = resolved.apiKey;
   try {
-    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const model = process.env.OPENAI_MODEL ?? "gpt-5.4-mini";
+    const client = new OpenAI({ apiKey });
+    const model = openaiModel();
     const completion = await client.responses.create(
       {
         model,
+        store: false,
         input: [
           { role: "system", content: COPILOT_SYSTEM_PROMPT },
           {
@@ -111,9 +168,9 @@ export async function POST(request: Request): Promise<Response> {
     );
 
     const nextRemaining = remaining - 1;
-    const parsed = parseRelationshipBrief(parseOutputText(completion.output_text));
-    if (!parsed.ok) {
-      return jsonWithCookie(
+    const parsedBrief = parseRelationshipBrief(parseOutputText(completion.output_text));
+    if (!parsedBrief.ok) {
+      return jsonWithUsageCookie(
         {
           ok: false,
           code: "invalid_schema",
@@ -124,9 +181,9 @@ export async function POST(request: Request): Promise<Response> {
         nextRemaining,
       );
     }
-    const validated = validateRelationshipBrief(parsed.brief, context);
+    const validated = validateRelationshipBrief(parsedBrief.brief, context);
     if (!validated.ok) {
-      return jsonWithCookie(
+      return jsonWithUsageCookie(
         {
           ok: false,
           code: "unsupported_evidence",
@@ -138,7 +195,7 @@ export async function POST(request: Request): Promise<Response> {
       );
     }
 
-    return jsonWithCookie(
+    return jsonWithUsageCookie(
       {
         ok: true,
         mode: "live",
@@ -150,73 +207,63 @@ export async function POST(request: Request): Promise<Response> {
       },
       nextRemaining,
     );
-  } catch {
-    const nextRemaining = remaining;
-    return jsonWithCookie(
+  } catch (error) {
+    if (isOpenAIAuthError(error)) {
+      return jsonWithUsageCookie(
+        {
+          ok: false,
+          code: "invalid_credentials",
+          retryable: false,
+          fallback,
+          usageRemaining: remaining,
+        },
+        remaining,
+      );
+    }
+    return jsonWithUsageCookie(
       {
         ok: false,
         code: "provider_error",
         retryable: true,
         fallback,
-        usageRemaining: nextRemaining,
+        usageRemaining: remaining,
       },
-      nextRemaining,
+      remaining,
     );
   }
 }
 
+function invalidRequest(remaining: number): Response {
+  return Response.json(
+    { ok: false, code: "invalid_request", retryable: false, fallback: null, usageRemaining: remaining },
+    { status: 400 },
+  );
+}
+
 function contextFromRequest(body: BriefRequest): CopilotEvidenceContext {
-  const timeline = Array.isArray(body.timeline) ? body.timeline : [];
-  const personTimeline = timeline.filter((entry) => entry.personId === body.personId);
+  const timeline = body.timeline.filter((entry) => entry.personId === body.personId);
   return {
     personId: body.personId,
     companyId: body.companyId,
-    eligibility: deriveRelationshipEligibility(personTimeline),
-    allowedEncounterIds: personTimeline
+    eligibility: deriveRelationshipEligibility(timeline),
+    allowedEncounterIds: timeline
       .filter((entry) => entry.kind === "actual_encounter")
       .map((entry) => entry.id),
-    allowedSignalIds: filterAllowedEvidence(body.personId, body.companyId, body.evidence ?? []),
-    canDraftEmail: Boolean(body.canDraftEmail),
-    canDraftLinkedIn: Boolean(body.canDraftLinkedIn),
+    allowedSignalIds: filterAllowedEvidence(body.personId, body.companyId, body.evidence),
+    canDraftEmail: body.canDraftEmail,
+    canDraftLinkedIn: body.canDraftLinkedIn,
   };
 }
 
-function readUsageRemaining(cookieHeader: string | null): number {
-  const raw = cookieValue(cookieHeader, USAGE_COOKIE);
-  if (!raw) return USAGE_MAX;
-  const [payload, hmac] = raw.split(".");
-  if (!payload || !hmac) return USAGE_MAX;
-  const expected = createHmac("sha256", secret()).update(payload).digest("hex");
-  if (!safeEqual(hmac, expected)) return USAGE_MAX;
-  const remaining = Number(payload);
-  if (!Number.isInteger(remaining) || remaining < 0 || remaining > USAGE_MAX) return USAGE_MAX;
-  return remaining;
-}
-
-function jsonWithCookie(payload: unknown, remaining: number): Response {
-  const response = Response.json(payload);
-  response.headers.set(
-    "Set-Cookie",
-    `${USAGE_COOKIE}=${signUsageCookie(remaining)}; HttpOnly; Path=/; SameSite=Lax`,
+function isOpenAIAuthError(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const candidate = error as { status?: unknown; statusCode?: unknown; code?: unknown; name?: unknown };
+  return (
+    candidate.status === 401 ||
+    candidate.statusCode === 401 ||
+    candidate.code === "invalid_api_key" ||
+    candidate.name === "AuthenticationError"
   );
-  return response;
-}
-
-function cookieValue(header: string | null, name: string): string | undefined {
-  if (!header) return undefined;
-  const match = header.split(/;\s*/).find((part) => part.startsWith(`${name}=`));
-  return match?.slice(name.length + 1);
-}
-
-function secret(): string {
-  return process.env.AI_USAGE_SECRET ?? "";
-}
-
-function safeEqual(left: string, right: string): boolean {
-  const leftBuffer = Buffer.from(left);
-  const rightBuffer = Buffer.from(right);
-  if (leftBuffer.length !== rightBuffer.length) return false;
-  return timingSafeEqual(leftBuffer, rightBuffer);
 }
 
 function parseOutputText(outputText: string): unknown {

@@ -3,9 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 
+import { Button, ButtonRow, buttonClassName } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { CACHED_MARCUS_BRIEF } from "@/features/copilot/cached-marcus";
-import { ALL_EVIDENCE, PROFILES, type FullProfileId } from "@/data/prep-snapshots";
+import { ALL_EVIDENCE, ALL_PROFILES } from "@/data/prep-snapshots";
 import { CONFERENCES } from "@/data/conferences";
+import { useIntegrationStatus } from "@/hooks/use-integration-status";
 import { useWorkspace } from "@/workspace/provider";
 import type { RelationshipBrief, StoredCopilotBrief } from "@/domain/types";
 
@@ -19,8 +22,8 @@ export function RelationshipCopilot({
   conferenceId?: string;
 }) {
   const { state, dispatch } = useWorkspace();
+  const integrations = useIntegrationStatus();
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const stored = state.copilotBriefs[personId];
   const cached: StoredCopilotBrief | null =
     personId === "marcus"
@@ -33,8 +36,8 @@ export function RelationshipCopilot({
           brief: CACHED_MARCUS_BRIEF,
         }
       : null;
-  const current = stored ?? cached;
-  const profile = personId in PROFILES ? PROFILES[personId as FullProfileId] : null;
+  const current = stored?.brief ? stored : cached;
+  const profile = ALL_PROFILES[personId] ?? null;
   const contact = state.contacts.find((item) => item.id === personId);
   const canDraftEmail = profile
     ? profile.contact.email?.confidence === "verified"
@@ -47,12 +50,12 @@ export function RelationshipCopilot({
 
   async function generate() {
     setBusy(true);
-    setError(null);
     try {
       const response = await fetch("/api/relationship-brief", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
+          mode: integrations?.mode ?? "demo",
           personId,
           companyId,
           timeline: state.timeline.filter((entry) => entry.personId === personId),
@@ -69,7 +72,7 @@ export function RelationshipCopilot({
       const payload = (await response.json()) as
         | {
             ok: true;
-            mode: "live";
+            mode: "live" | "demo";
             brief: RelationshipBrief;
             provider: string;
             model: string;
@@ -78,9 +81,9 @@ export function RelationshipCopilot({
         | {
             ok: false;
             code: string;
-            fallback: RelationshipBrief;
+            fallback: RelationshipBrief | null;
           };
-      if (payload.ok) {
+      if (payload.ok && payload.brief) {
         dispatch({
           type: "copilot/store",
           personId,
@@ -93,7 +96,7 @@ export function RelationshipCopilot({
             brief: payload.brief,
           },
         });
-      } else {
+      } else if (!payload.ok && payload.fallback) {
         dispatch({
           type: "copilot/store",
           personId,
@@ -106,27 +109,25 @@ export function RelationshipCopilot({
             brief: payload.fallback,
           },
         });
-        setError(payload.code);
       }
     } catch {
-      setError("request_failed");
+      // Keep any existing brief visible when a request cannot complete.
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <section className="workspace-card compact" aria-labelledby={`copilot-${personId}`}>
+    <Card className="compact" aria-labelledby={`copilot-${personId}`}>
       <h2 id={`copilot-${personId}`}>Relationship Copilot</h2>
       <p className="lede">
         Interpret stored evidence only. Opening this page does not call research or AI.
       </p>
-      <button type="button" className="chip chip-active" onClick={() => void generate()} disabled={busy}>
+      <Button variant="primary" onClick={() => void generate()} disabled={busy || !integrations}>
         {busy ? "Generating…" : "Generate relationship brief"}
-      </button>
-      {error ? <p className="demo-warning">Returned {error}. Showing the safe fallback.</p> : null}
+      </Button>
       {current ? <BriefCard stored={current} personId={personId} conferencePath={conference ? `/conferences/${conference.id}/prep/${personId}` : null} /> : null}
-    </section>
+    </Card>
   );
 }
 
@@ -140,56 +141,112 @@ function BriefCard({
   conferencePath: string | null;
 }) {
   const brief = stored.brief;
+  const [linkedInCopied, setLinkedInCopied] = useState(false);
+  const [isReading, setIsReading] = useState(false);
+  const summary = demoRelationshipSummary(brief);
+
+  async function copyLinkedInDraft() {
+    if (!brief.linkedInDraft) return;
+    try {
+      await navigator.clipboard.writeText(brief.linkedInDraft);
+      setLinkedInCopied(true);
+    } catch {
+      setLinkedInCopied(false);
+    }
+  }
+
+  function readSummary() {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    const utterance = new SpeechSynthesisUtterance(summary);
+    utterance.onend = () => setIsReading(false);
+    utterance.onerror = () => setIsReading(false);
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+    setIsReading(true);
+  }
+
+  function stopReading() {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+    setIsReading(false);
+  }
+
   return (
-    <div>
-      <p className="eyebrow">
-        {stored.mode === "live" ? "Live AI" : stored.mode === "cached" ? "Cached demo example" : "Deterministic fallback"}{" "}
-        · {stored.provider}/{stored.model} · {stored.generatedAt}
-      </p>
-      <p>
-        State {brief.state} · confidence {brief.confidence}
-      </p>
-      <p>{brief.summary}</p>
-      <p>
-        <strong>Fact:</strong> {brief.suggestedAngle.fact}
-      </p>
-      <p>
-        <strong>Inference:</strong> {brief.suggestedAngle.relevanceInference}
-      </p>
-      <p>
-        <strong>Recommended action:</strong> {brief.recommendedAction}
-      </p>
-      <EvidenceLinks
-        label="Supporting evidence"
-        ids={[...brief.evidenceEncounterIds, ...brief.evidenceSignalIds, ...brief.suggestedAngle.evidenceIds]}
-        personId={personId}
-        conferencePath={conferencePath}
-      />
+    <div className="copilot-brief">
+      <div className="copilot-status-row">
+        <div>
+          <span>Relationship status</span>
+          <strong>{brief.state}</strong>
+        </div>
+        <div>
+          <span>Confidence</span>
+          <strong>{Math.round(brief.confidence * 100)}%</strong>
+        </div>
+      </div>
+      <section className="copilot-insight">
+        <span className="eyebrow">Relationship read</span>
+        <p>{brief.summary}</p>
+      </section>
+      <div className="copilot-brief-grid">
+        <section className="copilot-brief-section">
+          <span>Known fact</span>
+          <p>{brief.suggestedAngle.fact}</p>
+        </section>
+        <section className="copilot-brief-section">
+          <span>What it means</span>
+          <p>{brief.suggestedAngle.relevanceInference}</p>
+        </section>
+      </div>
+      <section className="copilot-next-step">
+        <span>Recommended next step</span>
+        <p>{brief.recommendedAction}</p>
+      </section>
+      <div className="copilot-evidence">
+        <EvidenceLinks
+          label="Supporting evidence"
+          ids={[...brief.evidenceEncounterIds, ...brief.evidenceSignalIds, ...brief.suggestedAngle.evidenceIds]}
+          personId={personId}
+          conferencePath={conferencePath}
+        />
+      </div>
       {brief.counterEvidence.length > 0 ? (
-        <ul>
+        <ul className="copilot-context-list" aria-label="Context to consider">
           {brief.counterEvidence.map((item) => (
-            <li key={item} className="coverage-warning">
+            <li key={item} className="copilot-context-note">
               {item}
             </li>
           ))}
         </ul>
       ) : null}
-      {brief.followUpDraft ? (
-        <label className="field-label">
-          Email draft
-          <textarea rows={4} defaultValue={`${brief.followUpDraft.subject}\n\n${brief.followUpDraft.body}`} />
-        </label>
-      ) : (
-        <p className="provenance">No email draft — no usable verified email channel.</p>
-      )}
       {brief.linkedInDraft ? (
-        <label className="field-label">
-          LinkedIn draft
-          <textarea rows={3} defaultValue={brief.linkedInDraft} />
-        </label>
+        <>
+          <label className="field-label">
+            LinkedIn draft
+            <textarea rows={3} defaultValue={brief.linkedInDraft} />
+          </label>
+          <ButtonRow className="copilot-draft-actions">
+            <Button size="sm" onClick={() => void copyLinkedInDraft()}>
+              {linkedInCopied ? "Copied" : "Copy LinkedIn message"}
+            </Button>
+          </ButtonRow>
+        </>
       ) : null}
+      <section className="copilot-audio-summary" aria-label="Audio summary">
+        <div>
+          <span className="eyebrow">Audio summary</span>
+          <p>Listen to a concise spoken summary of this relationship brief.</p>
+        </div>
+        <Button variant="secondary" size="sm" onClick={isReading ? stopReading : readSummary}>
+          {isReading ? "Stop reading" : "Listen to brief summary"}
+        </Button>
+      </section>
     </div>
   );
+}
+
+function demoRelationshipSummary(brief: RelationshipBrief): string {
+  return `${brief.summary} ${brief.suggestedAngle.fact} Next step: ${brief.recommendedAction}`;
 }
 
 function EvidenceLinks({
@@ -215,7 +272,7 @@ function EvidenceLinks({
             ? `${conferencePath}#${id}`
             : `#${id}`;
         return (
-          <Link key={id} href={href} className="chip">
+          <Link key={id} href={href} className={buttonClassName("ghost", "sm")}>
             {id}
           </Link>
         );

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Grain · Conference Intelligence</title>
+  <style>
+    :root {
+      --navy: #14245f;
+      --navy-2: #263675;
+      --blue: #246bfe;
+      --blue-soft: #edf4ff;
+      --cyan: #8bb8ff;
+      --green: #0a8f74;
+      --green-soft: #e9f8f4;
+      --amber: #b86112;
+      --amber-soft: #fff5e8;
+      --red: #bf3c4d;
+      --red-soft: #fff0f2;
+      --ink: #111a3a;
+      --muted: #64709a;
+      --line: #dfe5f1;
+      --surface: #ffffff;
+      --canvas: #f5f7fb;
+      --shadow: 0 12px 38px rgba(31, 48, 94, .07);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--canvas); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .app { min-height: 100vh; }
+    .topbar { height: 72px; background: rgba(255,255,255,.96); border-bottom: 1px solid var(--line); display: flex; align-items: center; padding: 0 28px; position: sticky; top: 0; z-index: 10; }
+    .brand { display: flex; align-items: center; gap: 10px; min-width: 245px; color: var(--navy); font-weight: 750; letter-spacing: -.03em; font-size: 21px; }
+    .brand-mark { width: 25px; height: 25px; border-radius: 6px; background: var(--navy); position: relative; box-shadow: inset 0 0 0 1px rgba(255,255,255,.18); }
+    .brand-mark::after { content: ""; position: absolute; width: 6px; height: 13px; left: 9px; top: 6px; background: white; border-radius: 4px 1px 4px 1px; transform: skewY(-26deg); }
+    .brand small { display: block; color: var(--muted); font-size: 10px; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; margin-top: 1px; }
+    .nav { display: flex; align-items: center; gap: 6px; height: 100%; }
+    .nav a { height: 100%; padding: 0 15px; display: flex; align-items: center; text-decoration: none; color: #6c769c; font-size: 14px; font-weight: 650; border-bottom: 2px solid transparent; }
+    .nav a.active { color: var(--navy); border-bottom-color: var(--blue); }
+    .top-actions { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+    .mode { display: flex; align-items: center; gap: 7px; color: var(--green); background: var(--green-soft); border-radius: 999px; padding: 8px 11px; font-size: 12px; font-weight: 700; }
+    .mode::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #20b896; }
+    .icon-button { width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 11px; background: white; color: var(--muted); }
+    .avatar { width: 38px; height: 38px; border-radius: 12px; background: linear-gradient(145deg,var(--navy),#4b68bd); color: white; display: grid; place-items: center; font-weight: 750; font-size: 13px; }
+    .main { max-width: 1480px; margin: 0 auto; padding: 36px 34px 60px; }
+    .eyebrow { color: var(--blue); font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; margin: 0 0 8px; }
+    .page-head { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 27px; }
+    h1 { margin: 0; color: var(--navy); font-size: clamp(29px,3vw,40px); line-height: 1.05; letter-spacing: -.045em; }
+    .page-subtitle { margin: 10px 0 0; color: var(--muted); font-size: 14px; }
+    .ghost-action { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border: 1px solid #cfd8ea; background: white; color: var(--navy); border-radius: 10px; font-size: 13px; font-weight: 700; }
+    .catalog { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); overflow: hidden; }
+    .catalog-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
+    .view-tabs { display: inline-flex; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: #f8f9fc; }
+    .view-tab { border: 0; background: transparent; border-radius: 9px; min-width: 112px; padding: 9px 13px; color: var(--muted); text-align: left; display: flex; align-items: center; gap: 9px; }
+    .view-tab.active { background: white; color: var(--navy); box-shadow: 0 3px 12px rgba(36,50,94,.10); }
+    .view-icon { width: 23px; height: 23px; border-radius: 7px; background: #edf1f8; display: grid; place-items: center; font-size: 12px; }
+    .view-tab.active .view-icon { color: var(--blue); background: var(--blue-soft); }
+    .view-copy strong { display: block; font-size: 12px; line-height: 1.1; }
+    .view-copy span { display: block; font-size: 10px; margin-top: 3px; color: #9099b7; }
+    .search-wrap { position: relative; width: min(360px, 42vw); }
+    .search-wrap span { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: #8790ac; }
+    .search { width: 100%; height: 42px; border: 1px solid var(--line); border-radius: 11px; padding: 0 14px 0 38px; color: var(--ink); outline: none; background: white; }
+    .search:focus { border-color: #8cafef; box-shadow: 0 0 0 3px rgba(36,107,254,.11); }
+    .kpis { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; padding: 18px 20px 6px; }
+    .kpi { min-height: 124px; padding: 17px 17px 14px; border: 1px solid var(--line); border-radius: 14px; background: white; text-align: left; transition: .18s ease; position: relative; }
+    .kpi:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(27,48,98,.08); }
+    .kpi.active { border-color: #8dadff; box-shadow: 0 0 0 3px rgba(36,107,254,.09); }
+    .kpi.priority { border-top: 3px solid #38bc9e; }
+    .kpi.pipeline { border-top: 3px solid #67a0ff; }
+    .kpi.deployed { border-top: 3px solid #8d7be8; }
+    .kpi.gaps { border-top: 3px solid #ef8e9c; }
+    .kpi-label { color: var(--muted); font-size: 11px; font-weight: 700; }
+    .kpi-value { margin-top: 8px; color: var(--navy); font-size: 29px; font-weight: 800; letter-spacing: -.04em; }
+    .kpi-detail { margin-top: 7px; color: #6e7898; font-size: 11px; line-height: 1.35; }
+    .kpi-hint { position: absolute; bottom: 12px; color: #a0a8bf; font-size: 10px; }
+    .filters { padding: 18px 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .filter-label { color: #929ab2; font-size: 11px; font-weight: 750; text-transform: uppercase; letter-spacing: .08em; margin-right: 3px; }
+    .chip { border: 1px solid var(--line); background: white; color: #687394; border-radius: 999px; padding: 7px 11px; font-size: 11px; font-weight: 700; }
+    .chip.active { border-color: var(--navy); color: white; background: var(--navy); }
+    .filter-select { margin-left: auto; min-width: 142px; height: 34px; border: 1px solid var(--line); border-radius: 9px; color: var(--navy); background: white; padding: 0 10px; font-size: 11px; font-weight: 650; }
+    .result-count { color: #9099b4; font-size: 11px; padding: 0 20px 10px; }
+    .table-wrap { overflow-x: auto; border-top: 1px solid var(--line); }
+    table { border-collapse: collapse; width: 100%; min-width: 970px; }
+    th { text-align: left; padding: 12px 18px; color: #8992ae; font-size: 10px; text-transform: uppercase; letter-spacing: .07em; background: #fafbfe; font-weight: 800; }
+    td { padding: 15px 18px; border-top: 1px solid #edf0f6; vertical-align: middle; font-size: 12px; color: #536080; }
+    tbody tr { transition: background .15s; }
+    tbody tr:hover { background: #f8faff; }
+    .event-cell { min-width: 250px; }
+    .event-name { display: flex; align-items: center; gap: 9px; color: var(--navy); font-size: 13px; font-weight: 760; }
+    .event-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 0 4px var(--blue-soft); }
+    .event-meta { margin: 5px 0 0 17px; color: #98a0b7; font-size: 10px; }
+    .date-main { color: var(--ink); font-weight: 650; }
+    .date-sub { display: block; margin-top: 4px; color: #9099b3; font-size: 10px; }
+    .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 5px 8px; font-size: 10px; font-weight: 750; }
+    .badge.fintech { color: #1659cc; background: #edf4ff; }
+    .badge.treasury { color: #7550b5; background: #f5efff; }
+    .badge.travel { color: #a05815; background: #fff4e7; }
+    .badge.saas { color: #0a816b; background: #eaf8f4; }
+    .score { display: flex; align-items: center; gap: 10px; }
+    .score-number { width: 34px; color: var(--navy); font-size: 15px; font-weight: 800; }
+    .score-track { width: 74px; height: 5px; border-radius: 999px; background: #e9edf5; overflow: hidden; }
+    .score-fill { height: 100%; background: linear-gradient(90deg,var(--blue),#79a8ff); border-radius: inherit; }
+    .tier { color: var(--green); font-weight: 750; font-size: 10px; }
+    .decision { display: inline-flex; align-items: center; gap: 6px; font-weight: 750; }
+    .decision::before { content: ""; width: 7px; height: 7px; border-radius: 50%; }
+    .decision.attend { color: var(--green); }
+    .decision.attend::before { background: #23ad8b; }
+    .decision.watch { color: var(--amber); }
+    .decision.watch::before { background: #eda85f; }
+    .decision.undecided { color: #77809c; }
+    .decision.undecided::before { background: #bac1d0; }
+    .owner { display: flex; align-items: center; gap: 7px; color: var(--navy); font-weight: 650; }
+    .owner-avatar { width: 25px; height: 25px; border-radius: 8px; display: grid; place-items: center; color: white; background: #7287c7; font-size: 9px; font-weight: 800; }
+    .owner.empty { color: #9aa2b8; font-weight: 500; }
+    .row-action { border: 1px solid #d6ddec; background: white; border-radius: 9px; color: var(--navy); padding: 7px 10px; font-size: 10px; font-weight: 750; }
+    .empty-view { min-height: 360px; display: none; padding: 28px 24px; border-top: 1px solid var(--line); }
+    .empty-view.active { display: block; }
+    .timeline { display: grid; grid-template-columns: 94px 1fr; gap: 14px 20px; max-width: 980px; }
+    .timeline-month { color: #9199b2; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; padding-top: 11px; }
+    .timeline-events { display: flex; gap: 10px; flex-wrap: wrap; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+    .timeline-event { padding: 10px 12px; background: white; border: 1px solid var(--line); border-left: 3px solid var(--blue); border-radius: 10px; min-width: 205px; }
+    .timeline-event strong { display: block; color: var(--navy); font-size: 12px; }
+    .timeline-event span { display: block; color: #8d96b1; font-size: 10px; margin-top: 4px; }
+    .map-layout { display: grid; grid-template-columns: 1fr 280px; gap: 20px; }
+    .map-canvas { min-height: 290px; background: radial-gradient(circle at 55% 45%,#eef5ff,transparent 42%), linear-gradient(145deg,#f6f9ff,#edf2fa); border: 1px solid var(--line); border-radius: 14px; position: relative; overflow: hidden; }
+    .map-canvas::before { content: "Regional planning view"; position: absolute; left: 18px; top: 16px; color: #8b94ae; font-size: 11px; font-weight: 700; }
+    .map-pin { position: absolute; width: 16px; height: 16px; border: 4px solid white; border-radius: 50%; background: var(--blue); box-shadow: 0 4px 12px rgba(36,107,254,.35); }
+    .map-label { position: absolute; background: white; border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; color: var(--navy); font-size: 10px; font-weight: 750; box-shadow: 0 6px 18px rgba(27,44,88,.08); }
+    .map-summary { padding: 5px 0; }
+    .map-summary h3 { margin: 0 0 13px; color: var(--navy); font-size: 14px; }
+    .region-row { display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid var(--line); color: #697392; font-size: 11px; }
+    .region-row strong { color: var(--navy); }
+    .note { margin: 14px 20px 18px; padding: 12px 14px; border-radius: 11px; color: #5e6e9d; background: #f3f7ff; font-size: 11px; display: flex; gap: 9px; align-items: center; }
+    .hidden-row { display: none; }
+    @media (max-width: 900px) {
+      .nav { display: none; }
+      .brand { min-width: 0; }
+      .main { padding: 24px 16px 40px; }
+      .kpis { grid-template-columns: repeat(2,1fr); }
+      .catalog-toolbar { align-items: stretch; flex-direction: column; }
+      .search-wrap { width: 100%; }
+      .filter-select { margin-left: 0; }
+      .map-layout { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) {
+      .topbar { padding: 0 15px; }
+      .brand small, .mode { display: none; }
+      .page-head { align-items: start; flex-direction: column; }
+      .kpis { grid-template-columns: 1fr; }
+      .view-tab { min-width: 0; flex: 1; }
+      .view-copy span { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span>grain<small>Conference Intelligence</small></span></div>
+      <nav class="nav" aria-label="Primary">
+        <a href="#">Today</a><a class="active" href="#">Conferences</a><a href="#">Planning</a><a href="#">Capture</a><a href="#">Relationships</a>
+      </nav>
+      <div class="top-actions"><span class="mode">Demo workspace</span><button class="icon-button" aria-label="Settings">⚙</button><span class="avatar">NS</span></div>
+    </header>
+    <main class="main">
+      <div class="page-head">
+        <div><p class="eyebrow">Conference discovery</p><h1>Conferences</h1><p class="page-subtitle">Prioritize the right rooms, assign coverage, and prepare the people who matter.</p></div>
+        <button class="ghost-action">↗ Export annual plan</button>
+      </div>
+      <section class="catalog" aria-label="Conference catalog">
+        <div class="catalog-toolbar">
+          <div class="view-tabs" role="tablist" aria-label="Conference view">
+            <button class="view-tab active" data-view="table" role="tab" aria-selected="true"><span class="view-icon">▤</span><span class="view-copy"><strong>Table</strong><span>Sort &amp; filter</span></span></button>
+            <button class="view-tab" data-view="timeline" role="tab" aria-selected="false"><span class="view-icon">▥</span><span class="view-copy"><strong>Timeline</strong><span>Year at a glance</span></span></button>
+            <button class="view-tab" data-view="map" role="tab" aria-selected="false"><span class="view-icon">⌖</span><span class="view-copy"><strong>Regions</strong><span>Coverage view</span></span></button>
+          </div>
+          <label class="search-wrap"><span>⌕</span><input id="search" class="search" type="search" aria-label="Search conferences" placeholder="Search name, location, or vertical…" /></label>
+        </div>
+        <div class="kpis">
+          <button class="kpi priority" data-kpi="tier-a"><span class="kpi-label">Tier A priority events</span><span class="kpi-value">7</span><span class="kpi-detail">4 attending · 3 still need a decision</span><span class="kpi-hint">Filter priority events →</span></button>
+          <button class="kpi pipeline" data-kpi="tier-b"><span class="kpi-label">Tier B pipeline events</span><span class="kpi-value">3</span><span class="kpi-detail">2 watched · 1 awaiting review</span><span class="kpi-hint">Filter pipeline events →</span></button>
+          <button class="kpi deployed" data-kpi="attend"><span class="kpi-label">Team deployed</span><span class="kpi-value">5</span><span class="kpi-detail">Across 4 regions and 3 owners</span><span class="kpi-hint">See attending events →</span></button>
+          <button class="kpi gaps" data-kpi="gap"><span class="kpi-label">Coverage gaps</span><span class="kpi-value">3</span><span class="kpi-detail">Tier A events without a decision</span><span class="kpi-hint">Resolve coverage →</span></button>
+        </div>
+        <div class="filters">
+          <span class="filter-label">Vertical</span>
+          <button class="chip active" data-filter="all">All</button><button class="chip" data-filter="fintech">Fintech</button><button class="chip" data-filter="treasury">Treasury</button><button class="chip" data-filter="travel">Travel</button><button class="chip" data-filter="saas">SaaS</button>
+          <select id="decision" class="filter-select" aria-label="Decision"><option value="all">All decisions</option><option value="attend">Attending</option><option value="watch">Watching</option><option value="undecided">Undecided</option></select>
+        </div>
+        <div id="result-count" class="result-count">Showing 7 representative events · 12 verified events in catalog</div>
+        <div id="table-view" class="table-wrap">
+          <table>
+            <thead><tr><th>Conference</th><th>Date &amp; location</th><th>Vertical</th><th>Recommendation</th><th>Decision</th><th>Owner</th><th></th></tr></thead>
+            <tbody id="rows">
+              <tr data-name="money20/20 europe amsterdam fintech" data-vertical="fintech" data-tier="tier-a" data-decision="undecided"><td class="event-cell"><div class="event-name"><span class="event-dot"></span>Money20/20 Europe</div><div class="event-meta">Official source · verified 2026-09-09</div></td><td><span class="date-main">Jun 8–10, 2027</span><span class="date-sub">Amsterdam, Netherlands</span></td><td><span class="badge fintech">Fintech</span></td><td><div class="score"><span class="score-number">83</span><span class="score-track"><span class="score-fill" style="display:block;width:83%"></span></span><span class="tier">A</span></div></td><td><span class="decision undecided">Undecided</span></td><td><span class="owner empty">Unassigned</span></td><td><button class="row-action">Open brief →</button></td></tr>
+              <tr data-name="money20/20 usa las vegas fintech" data-vertical="fintech" data-tier="tier-a" data-decision="attend"><td class="event-cell"><div class="event-name"><span class="event-dot"></span>Money20/20 USA</div><div class="event-meta">Prep ready · 3 qualified people</div></td><td><span class="date-main">Oct 18–21, 2026</span><span class="date-sub">Las Vegas, USA</span></td><td><span class="badge fintech">Fintech</span></td><td><div class="score"><span class="score-number">80</span><span class="score-track"><span class="score-fill" style="display:block;width:80%"></span></span><span class="tier">A</span></div></td><td><span class="decision attend">Attend</span></td><td><span class="owner"><span class="owner-avatar">NA</span>Nadav</span></td><td><button class="row-action">Open brief →</button></td></tr>
+              <tr data-name="eurofinance international treasury management barcelona treasury" data-vertical="treasury" data-tier="tier-a" data-decision="attend"><td class="event-cell"><div class="event-name"><span class="event-dot"></span>EuroFinance International</div><div class="event-meta">Prep ready · 1 qualified person</div></td><td><span class="date-main">Sep 16–18, 2026</span><span class="date-sub">Barcelona, Spain</span></td><td><span class="badge treasury">Treasury</span></td><td><div class="score"><span class="score-number">81</span><span class="score-track"><span class="score-fill" style="display:block;width:81%"></span></span><span class="tier">A</span></div></td><td><span class="decision attend">Attend</span></td><td><span class="owner"><span class="owner-avatar">AL</span>Alex</span></td><td><button class="row-action">Open brief →</button></td></tr>
+              <tr data-name="sibos miami beach fintech" data-vertical="fintech" data-tier="tier-a" data-decision="undecided"><td class="event-cell"><div class="event-name"><span class="event-dot"></span>Sibos</div><div class="event-meta">No cached Prep snapshot</div></td><td><span class="date-main">Sep 28–Oct 1, 2026</span><span class="date-sub">Miami Beach, USA</span></td><td><span class="badge fintech">Fintech</span></td><td><div class="score"><span class="score-number">80</span><span class="score-track"><span class="score-fill" style="display:block;width:80%"></span></span><span class="tier">A</span></div></td><td><span class="decision undecided">Undecided</span></td><td><span class="owner empty">Unassigned</span></td><td><button class="row-action">Open brief →</button></td></tr>
+              <tr data-name="singapore fintech festival singapore fintech" data-vertical="fintech" data-tier="tier-b" data-decision="undecided"><td class="event-cell"><div class="event-name"><span class="event-dot"></span>Singapore FinTech Festival</div><div class="event-meta">Official source · audience unknown</div></td><td><span class="date-main">Nov 18–20, 2026</span><span class="date-sub">Singapore</span></td><td><span class="badge fintech">Fintech</span></td><td><div class="score"><span class="score-number">70</span><span class="score-track"><span class="score-fill" style="display:block;width:70%"></span></span><span class="tier" style="color:#b86112">B</span></div></td><td><span class="decision undecided">Undecided</span></td><td><span class="owner empty">Unassigned</span></td><td><button class="row-action">Open brief →</button></td></tr>
+              <tr data-name="business travel show europe london travel" data-vertical="travel" data-tier="tier-b" data-decision="watch"><td class="event-cell"><div class="event-name"><span class="event-dot"></span>Business Travel Show Europe</div><div class="event-meta">Clustered with TravelTech Show</div></td><td><span class="date-main">Jun 23–24, 2027</span><span class="date-sub">London, UK</span></td><td><span class="badge travel">Travel</span></td><td><div class="score"><span class="score-number">70</span><span class="score-track"><span class="score-fill" style="display:block;width:70%"></span></span><span class="tier" style="color:#b86112">B</span></div></td><td><span class="decision watch">Watch</span></td><td><span class="owner"><span class="owner-avatar">SA</span>Sam</span></td><td><button class="row-action">Open brief →</button></td></tr>
+              <tr data-name="saastr ai annual san francisco saas" data-vertical="saas" data-tier="tier-c" data-decision="undecided"><td class="event-cell"><div class="event-name"><span class="event-dot"></span>SaaStr AI Annual</div><div class="event-meta">Lower ICP fit · monitor only</div></td><td><span class="date-main">May 11–12, 2027</span><span class="date-sub">San Francisco Bay Area</span></td><td><span class="badge saas">SaaS</span></td><td><div class="score"><span class="score-number">60</span><span class="score-track"><span class="score-fill" style="display:block;width:60%"></span></span><span class="tier" style="color:#78819d">C</span></div></td><td><span class="decision undecided">Undecided</span></td><td><span class="owner empty">Unassigned</span></td><td><button class="row-action">Open brief →</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="timeline-view" class="empty-view">
+          <div class="timeline"><div class="timeline-month">Sep 2026</div><div class="timeline-events"><div class="timeline-event"><strong>Money20/20 Middle East</strong><span>Sep 14–16 · Alex · Attend</span></div><div class="timeline-event"><strong>EuroFinance</strong><span>Sep 16–18 · Alex · Conflict</span></div><div class="timeline-event"><strong>Seamless Middle East</strong><span>Sep 22–24 · Decision needed</span></div><div class="timeline-event"><strong>Sibos</strong><span>Sep 28–Oct 1 · Decision needed</span></div></div><div class="timeline-month">Oct 2026</div><div class="timeline-events"><div class="timeline-event"><strong>Money20/20 USA</strong><span>Oct 18–21 · Nadav · Attend</span></div></div><div class="timeline-month">Nov 2026</div><div class="timeline-events"><div class="timeline-event"><strong>Singapore FinTech Festival</strong><span>Nov 18–20 · Decision needed</span></div></div><div class="timeline-month">2027</div><div class="timeline-events"><div class="timeline-event"><strong>ITB Berlin</strong><span>Mar 16–18 · Nadav · Attend</span></div><div class="timeline-event"><strong>Money20/20 Europe</strong><span>Jun 8–10 · Decision needed</span></div><div class="timeline-event"><strong>London travel cluster</strong><span>Jun 23–24 · Sam · Watch</span></div></div></div>
+        </div>
+        <div id="map-view" class="empty-view">
+          <div class="map-layout"><div class="map-canvas"><span class="map-pin" style="left:46%;top:34%"></span><span class="map-label" style="left:48%;top:27%">Europe · 4</span><span class="map-pin" style="left:21%;top:48%"></span><span class="map-label" style="left:23%;top:41%">North America · 3</span><span class="map-pin" style="left:61%;top:53%"></span><span class="map-label" style="left:63%;top:46%">Middle East · 2</span><span class="map-pin" style="left:80%;top:48%"></span><span class="map-label" style="left:70%;top:56%">Asia Pacific · 2</span></div><div class="map-summary"><h3>Regional coverage</h3><div class="region-row"><span>Europe</span><strong>3 assigned / 4</strong></div><div class="region-row"><span>North America</span><strong>2 assigned / 3</strong></div><div class="region-row"><span>Middle East</span><strong>1 assigned / 2</strong></div><div class="region-row"><span>Asia Pacific</span><strong>1 assigned / 2</strong></div><div class="note" style="margin:16px 0">● Coverage indicates saved ownership—not confirmed travel.</div></div></div>
+        </div>
+        <div class="note"><strong>Evidence-aware:</strong> recommendation scores use stored, sourced factors; audience size remains context and Unknown stays visible.</div>
+      </section>
+    </main>
+  </div>
+  <script>
+    const tabs = [...document.querySelectorAll('.view-tab')];
+    const views = { table: document.getElementById('table-view'), timeline: document.getElementById('timeline-view'), map: document.getElementById('map-view') };
+    tabs.forEach(tab => tab.addEventListener('click', () => {
+      tabs.forEach(item => { item.classList.toggle('active', item === tab); item.setAttribute('aria-selected', item === tab ? 'true' : 'false'); });
+      Object.entries(views).forEach(([name, view]) => { view.style.display = name === tab.dataset.view ? 'block' : 'none'; });
+    }));
+    let vertical = 'all'; let kpi = null;
+    const rows = [...document.querySelectorAll('#rows tr')];
+    const search = document.getElementById('search');
+    const decision = document.getElementById('decision');
+    function applyFilters() {
+      const query = search.value.trim().toLowerCase(); let shown = 0;
+      rows.forEach(row => {
+        const kpiMatch = !kpi || (kpi === 'gap' ? row.dataset.tier === 'tier-a' && row.dataset.decision === 'undecided' : kpi === 'attend' ? row.dataset.decision === 'attend' : row.dataset.tier === kpi);
+        const visible = row.dataset.name.includes(query) && (vertical === 'all' || row.dataset.vertical === vertical) && (decision.value === 'all' || row.dataset.decision === decision.value) && kpiMatch;
+        row.classList.toggle('hidden-row', !visible); if (visible) shown++;
+      });
+      document.getElementById('result-count').textContent = `Showing ${shown} representative event${shown === 1 ? '' : 's'} · 12 verified events in catalog`;
+    }
+    document.querySelectorAll('.chip').forEach(chip => chip.addEventListener('click', () => { vertical = chip.dataset.filter; document.querySelectorAll('.chip').forEach(item => item.classList.toggle('active', item === chip)); applyFilters(); }));
+    document.querySelectorAll('.kpi').forEach(card => card.addEventListener('click', () => { kpi = kpi === card.dataset.kpi ? null : card.dataset.kpi; document.querySelectorAll('.kpi').forEach(item => item.classList.toggle('active', item.dataset.kpi === kpi)); applyFilters(); }));
+    search.addEventListener('input', applyFilters); decision.addEventListener('change', applyFilters);
+  </script>
+</body>
+</html>
+

@@ -1,8 +1,14 @@
-export function GrainWordmark() {
+import Link from "next/link";
+
+export function GrainWordmark({ stacked = false }: { stacked?: boolean }) {
   return (
-    <div className="wordmark" aria-label="grain Conference intelligence">
+    <Link
+      href="/"
+      className={stacked ? "wordmark wordmark-stack" : "wordmark"}
+      aria-label="Grain Conference Intelligence — go to Today"
+    >
       <span className="wordmark-name">grain</span>
-      <span className="wordmark-product">Conference intelligence</span>
-    </div>
+      <span className="wordmark-product">Conference Intelligence</span>
+    </Link>
   );
 }

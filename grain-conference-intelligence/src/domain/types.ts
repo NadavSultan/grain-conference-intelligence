@@ -210,7 +210,7 @@ export interface RelationshipBrief {
 
 export interface StoredCopilotBrief {
   personId: string;
-  mode: "live" | "fallback" | "cached";
+  mode: "live" | "demo" | "fallback" | "cached";
   provider: string;
   model: string;
   generatedAt: string;
@@ -308,6 +308,7 @@ export type WorkspaceAction =
       subject?: string | null;
       body: string;
     }
+  | { type: "timeline/add-outreach"; personId: string; conferenceId: string; company: string; role: string; summary: string; occurredAt: string }
   | {
       type: "capture/save";
       name: string;
@@ -322,6 +323,21 @@ export type WorkspaceAction =
       reciprocal?: boolean;
       plannedMeetingId?: string;
     }
+  | {
+      type: "capture/update";
+      encounterId: string;
+      name: string;
+      company: string;
+      conferenceId: string;
+      occurredAt: string;
+      note: string;
+      role: string;
+      email?: string;
+      linkedIn?: string;
+      nextStep?: string;
+      reciprocal?: boolean;
+    }
+  | { type: "capture/delete"; encounterId: string }
   | { type: "match/accept"; reviewId: string; contactId: string }
   | { type: "match/reject"; reviewId: string }
   | { type: "capture/draft"; id: string; draft: CaptureDraft }

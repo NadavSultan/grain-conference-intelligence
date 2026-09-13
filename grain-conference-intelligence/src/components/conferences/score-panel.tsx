@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
+import { Plane } from "lucide-react";
 
+import { Badge, tierTone } from "@/components/ui/badge";
 import type { ConferenceScoreResult } from "@/domain/types";
 import { useWorkspace } from "@/workspace/provider";
 
@@ -27,23 +29,30 @@ export const COMPONENT_LABELS = {
 export function ScorePanel({
   score,
   audienceSizeLabel,
-  demoWarning,
+  conferenceStartDate,
 }: {
   score: ConferenceScoreResult;
   audienceSizeLabel: string;
-  demoWarning?: string;
+  conferenceStartDate: string;
 }) {
   return (
-    <section className="score-panel" aria-labelledby="score-heading">
+    <section className="score-panel" aria-labelledby="score-heading" data-tier={score.tier}>
       <div className="score-hero">
         <div>
           <p className="eyebrow">Explainable score snapshot</p>
           <h2 id="score-heading">
             {score.total} / 100 · Tier {score.tier}
           </h2>
+          <div className="score-hero-badges badge-row">
+            <Badge tone={tierTone(score.tier)}>Tier {score.tier}</Badge>
+            <Badge tone="info">Cached snapshot</Badge>
+          </div>
           <p className="lede">
             Suggested plan: {score.tier === "A" ? "Attend" : score.tier === "B" ? "Watch" : "Skip"}.
-            The stored human decision is edited separately and is never overwritten by a later snapshot.
+          </p>
+          <p className="recommended-departure">
+            <Plane aria-hidden="true" size={14} />
+            <strong>Recommended departure:</strong> {recommendedDeparture(conferenceStartDate)}
           </p>
         </div>
         <dl className="score-meta">
@@ -60,7 +69,7 @@ export function ScorePanel({
           </div>
           <div>
             <dt>Research time</dt>
-            <dd>{score.researchedAt ?? "Unknown"}</dd>
+            <dd>{score.researchedAt ? score.researchedAt.slice(0, 10) : "Unknown"}</dd>
           </div>
           <div>
             <dt>Audience size</dt>
@@ -68,10 +77,6 @@ export function ScorePanel({
           </div>
         </dl>
       </div>
-      {score.coverageWarning ? (
-        <p className="coverage-warning">{score.coverageWarning}</p>
-      ) : null}
-      {demoWarning ? <p className="demo-warning">{demoWarning}</p> : null}
       <ul className="score-bars">
         {score.components.map((component) => (
           <li key={component.component}>
@@ -103,4 +108,11 @@ export function ScorePanel({
       </ul>
     </section>
   );
+}
+
+function recommendedDeparture(startDate: string): string {
+  const departure = new Date(`${startDate}T00:00:00Z`);
+  departure.setUTCDate(departure.getUTCDate() - 1);
+  const label = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(departure);
+  return `${label} — 1 day before conference start`;
 }

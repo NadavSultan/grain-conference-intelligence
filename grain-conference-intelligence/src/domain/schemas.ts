@@ -263,7 +263,7 @@ export const workspaceStateV1Schema = z.object({
       z.string(),
       z.object({
         personId: z.string().min(1),
-        mode: z.enum(["live", "fallback", "cached"]),
+        mode: z.enum(["live", "demo", "fallback", "cached"]),
         provider: z.string(),
         model: z.string(),
         generatedAt: z.string().min(1),
