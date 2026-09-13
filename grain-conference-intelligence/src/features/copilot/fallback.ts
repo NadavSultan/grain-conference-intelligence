@@ -4,15 +4,10 @@ import type { CopilotEvidenceContext } from "@/features/copilot/schema";
 export function buildFallbackBrief(context: CopilotEvidenceContext): RelationshipBrief {
   const encounterIds = context.allowedEncounterIds;
   const signalPreview = context.allowedSignalIds.slice(0, 8);
-  const summary = [
-    `Deterministic eligibility is ${context.eligibility.state} with ${context.eligibility.encounterCount} actual encounter(s).`,
+  const summary =
     encounterIds.length > 0
-      ? `Encounter IDs: ${encounterIds.join(", ")}.`
-      : "No actual meetings are stored.",
-    signalPreview.length > 0
-      ? `Available evidence IDs: ${context.allowedSignalIds.join(", ")}.`
-      : "No research evidence IDs are in scope.",
-  ].join(" ");
+      ? `${context.eligibility.encounterCount} actual meeting${context.eligibility.encounterCount === 1 ? " is" : "s are"} on record. Use the recommended action to qualify the next sales step.`
+      : "No actual meetings are on record yet. Use the recommended action to qualify the next sales step.";
 
   return {
     state: context.eligibility.state,
@@ -23,7 +18,7 @@ export function buildFallbackBrief(context: CopilotEvidenceContext): Relationshi
     suggestedAngle: {
       fact:
         encounterIds[0]
-          ? `The latest sourced encounter id is ${encounterIds[encounterIds.length - 1]}.`
+          ? "A recorded meeting is part of this relationship history."
           : "No actual encounter is stored for this person.",
       evidenceIds: encounterIds[0]
         ? [encounterIds[encounterIds.length - 1]]

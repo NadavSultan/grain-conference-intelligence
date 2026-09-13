@@ -1,6 +1,6 @@
 import { workspaceStateV1Schema } from "@/domain/schemas";
 import type { WorkspaceStateV1 } from "@/domain/types";
-import { FULL_PROFILE_IDS, PREP_SNAPSHOTS, PROFILES } from "@/data/prep-snapshots";
+import { ALL_PROFILES, FULL_PROFILE_IDS, PREP_SNAPSHOTS } from "@/data/prep-snapshots";
 
 const DEMO_CLOCK = "2026-05-20T09:00:00.000Z";
 
@@ -87,12 +87,13 @@ export function createDemoWorkspace(): WorkspaceStateV1 {
         role: "Treasury Director",
       },
     ],
-    prepStatuses: Object.fromEntries(
-      FULL_PROFILE_IDS.map((personId) => [
+    prepStatuses: Object.fromEntries([
+      ...FULL_PROFILE_IDS.filter((personId) => ["sam", "david", "priya", "marcus"].includes(personId)).map((personId) => [
         `money20-eu-demo:${personId}`,
         "to_contact",
       ]),
-    ),
+      ...["emma", "liam"].map((personId) => [`eurofinance-2026:${personId}`, "to_contact"]),
+    ]),
     coordinationAcknowledgements: {},
     activeSnapshotIds,
     simulatedResearchRuns: {},
@@ -107,18 +108,15 @@ export function createDemoWorkspace(): WorkspaceStateV1 {
     },
     scoreSnapshots: [],
     outreachDrafts: {},
-    contacts: FULL_PROFILE_IDS.map((personId) => {
-      const profile = PROFILES[personId];
-      return {
-        id: personId,
-        name: profile.name,
-        company: profile.company,
-        role: profile.title,
-        domain: profile.contact.email?.value.split("@")[1],
-        email: profile.contact.email ?? undefined,
-        linkedIn: profile.contact.linkedIn,
-      };
-    }),
+    contacts: Object.values(ALL_PROFILES).map((profile) => ({
+      id: profile.id,
+      name: profile.name,
+      company: profile.company,
+      role: profile.title,
+      domain: profile.contact.email?.value.split("@")[1],
+      email: profile.contact.email ?? undefined,
+      linkedIn: profile.contact.linkedIn,
+    })),
     matchReviews: [],
     captureDrafts: {},
     copilotBriefs: {},

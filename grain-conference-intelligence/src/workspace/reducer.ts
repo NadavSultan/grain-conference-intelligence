@@ -112,6 +112,73 @@ export function workspaceReducer(
         ...state,
         captureDrafts: { ...state.captureDrafts, [action.id]: action.draft },
       };
+    case "capture/delete": {
+      const encounter = state.timeline.find(
+        (entry) => entry.id === action.encounterId && entry.kind === "actual_encounter",
+      );
+      if (!encounter) return state;
+
+      const timeline = state.timeline.filter((entry) => entry.id !== action.encounterId);
+      const plannedMeetings = encounter.plannedMeetingId
+        ? state.plannedMeetings.map((meeting) =>
+            meeting.id === encounter.plannedMeetingId ? { ...meeting, outcome: "planned" as const } : meeting,
+          )
+        : state.plannedMeetings;
+      const hasRemainingEncounter = timeline.some(
+        (entry) => entry.kind === "actual_encounter" && entry.personId === encounter.personId,
+      );
+      const contacts =
+        !hasRemainingEncounter && encounter.personId.startsWith("captured-")
+          ? state.contacts.filter((contact) => contact.id !== encounter.personId)
+          : state.contacts;
+
+      return {
+        ...state,
+        timeline,
+        plannedMeetings,
+        contacts,
+        matchReviews: state.matchReviews.filter(
+          (review) => review.capturedContactId !== encounter.personId,
+        ),
+      };
+    }
+    case "capture/update": {
+      const encounter = state.timeline.find(
+        (entry) => entry.id === action.encounterId && entry.kind === "actual_encounter",
+      );
+      if (!encounter) return state;
+
+      return {
+        ...state,
+        timeline: state.timeline.map((entry) =>
+          entry.id === action.encounterId
+            ? {
+                ...entry,
+                companyId: action.company.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+                conferenceId: action.conferenceId,
+                occurredAt: action.occurredAt,
+                summary: action.note,
+                company: action.company,
+                role: action.role,
+                nextStep: action.nextStep,
+                reciprocal: action.reciprocal,
+              }
+            : entry,
+        ),
+        contacts: state.contacts.map((contact) =>
+          contact.id === encounter.personId
+            ? {
+                ...contact,
+                name: action.name,
+                company: action.company,
+                role: action.role,
+                email: action.email ? { value: action.email, confidence: "verified" as const } : undefined,
+                linkedIn: action.linkedIn ? { value: action.linkedIn, confidence: "verified" as const } : undefined,
+              }
+            : contact,
+        ),
+      };
+    }
     case "copilot/store":
       return {
         ...state,

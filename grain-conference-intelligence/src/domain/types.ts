@@ -323,6 +323,21 @@ export type WorkspaceAction =
       reciprocal?: boolean;
       plannedMeetingId?: string;
     }
+  | {
+      type: "capture/update";
+      encounterId: string;
+      name: string;
+      company: string;
+      conferenceId: string;
+      occurredAt: string;
+      note: string;
+      role: string;
+      email?: string;
+      linkedIn?: string;
+      nextStep?: string;
+      reciprocal?: boolean;
+    }
+  | { type: "capture/delete"; encounterId: string }
   | { type: "match/accept"; reviewId: string; contactId: string }
   | { type: "match/reject"; reviewId: string }
   | { type: "capture/draft"; id: string; draft: CaptureDraft }
