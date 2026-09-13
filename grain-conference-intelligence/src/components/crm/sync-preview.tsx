@@ -80,16 +80,41 @@ export function SyncPreview({
       </p>
       <Button onClick={() => setOpen(true)}>Open CRM preview</Button>
       {open && preview ? (
-        <div>
-          <p className="eyebrow">Readable payload preview</p>
-          <p>Identity: {preview.identityKind}</p>
-          <p>
-            {preview.contactName} · {preview.company}
-          </p>
-          <p>Source: {preview.sourceNote}</p>
-          <p>Conference: {preview.conferenceContext}</p>
-          <p>Fields to write: {Object.entries(preview.fieldsToWrite).map(([key, value]) => `${key}=${value}`).join("; ")}</p>
-          <p>Protected (not written): {preview.protectedFields.join(", ")}</p>
+        <div className="crm-preview-panel" aria-label="HubSpot CRM preview">
+          <div className="crm-preview-heading">
+            <div>
+              <p className="eyebrow">CRM handoff preview</p>
+              <h3>Review before sync</h3>
+              <p>One clear contact update, with protected fields left untouched.</p>
+            </div>
+            <Badge tone={preview.canSync ? "success" : "warning"}>
+              {preview.canSync ? "Ready to sync" : "Action needed"}
+            </Badge>
+          </div>
+          <div className="crm-contact-summary">
+            <div className="crm-contact-avatar" aria-hidden="true">{initials(preview.contactName)}</div>
+            <div>
+              <strong>{preview.contactName}</strong>
+              <span>{preview.company}</span>
+              <small>{identityLabel(preview.identityKind)} · {preview.crmLabel}</small>
+            </div>
+          </div>
+          <div className="crm-preview-grid">
+            <div><span>Source</span><strong>{preview.sourceNote}</strong></div>
+            <div><span>Conference</span><strong>{preview.conferenceContext}</strong></div>
+          </div>
+          <section className="crm-payload-section">
+            <div className="crm-section-heading"><span>Fields to write</span><small>Contact record</small></div>
+            <div className="crm-field-list">
+              {Object.entries(preview.fieldsToWrite).map(([key, value]) => (
+                <div key={key}><span>{key}</span><strong>{value}</strong></div>
+              ))}
+            </div>
+          </section>
+          <section className="crm-protected-section">
+            <div className="crm-section-heading"><span>Protected fields</span><small>Never overwritten</small></div>
+            <div className="crm-chip-row">{preview.protectedFields.map((field) => <span key={field}>{field}</span>)}</div>
+          </section>
           {preview.blockedReason ? <Alert tone="warning">{preview.blockedReason}</Alert> : null}
           <ButtonRow>
             <Button variant="primary" onClick={sync} disabled={!preview.canSync}>
@@ -114,14 +139,23 @@ export function SyncPreview({
             </Button>
           </ButtonRow>
           {simulation ? (
-            <p>
-              Contact step {simulation.contactStep.status} {simulation.contactStep.id ?? ""} · Note
-              step {simulation.noteStep.status} {simulation.noteStep.id ?? ""}
-            </p>
+            <div className="crm-sync-result" role="status">
+              <strong>Sync result</strong>
+              <span>Contact {simulation.contactStep.status} {simulation.contactStep.id ?? ""}</span>
+              <span>Note {simulation.noteStep.status} {simulation.noteStep.id ?? ""}</span>
+            </div>
           ) : null}
           <p className="provenance">Demo mode only. No network request and no live HubSpot write.</p>
         </div>
       ) : null}
     </Card>
   );
+}
+
+function initials(name: string): string {
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+}
+
+function identityLabel(kind: "exact" | "review" | "new"): string {
+  return kind === "exact" ? "Exact identity match" : kind === "review" ? "Identity needs review" : "New contact";
 }

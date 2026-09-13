@@ -2,7 +2,8 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { RelationshipCopilot, copilotUserNotice } from "@/components/copilot/relationship-copilot";
+import { RelationshipCopilot } from "@/components/copilot/relationship-copilot";
+import { CACHED_MARCUS_BRIEF } from "@/features/copilot/cached-marcus";
 import { IntegrationStatusProvider } from "@/hooks/use-integration-status";
 import { WorkspaceProvider } from "@/workspace/provider";
 
@@ -39,8 +40,11 @@ const demoBrief = {
   },
   counterEvidence: ["Public activity is context, not a meeting or reciprocal commitment."],
   recommendedAction: "Ask whether new corridors changed FX handling?",
-  followUpDraft: null,
-  linkedInDraft: null,
+  followUpDraft: {
+    subject: "Money20/20 follow-up",
+    body: "Could we compare notes on new corridors?",
+  },
+  linkedInDraft: "Hi Marcus, would you be open to comparing notes?",
 };
 
 function jsonResponse(body: unknown, ok = true) {
@@ -82,7 +86,7 @@ describe("Relationship Copilot credential states", () => {
     vi.restoreAllMocks();
   });
 
-  it("shows a demo-generated label, not an error", async () => {
+  it("shows a demo brief without technical generation metadata", async () => {
     const fetchMock = mockApis({
       ok: true,
       mode: "demo",
@@ -98,8 +102,9 @@ describe("Relationship Copilot credential states", () => {
     await generateBrief(user);
 
     await waitFor(() => {
-      expect(screen.getByText("Demo-generated deterministic brief")).toBeInTheDocument();
+      expect(screen.getByText(demoBrief.summary)).toBeInTheDocument();
     });
+    expect(screen.queryByText(/Demo-generated deterministic brief/)).not.toBeInTheDocument();
     expect(screen.queryByText(/missing_key/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Returned /)).not.toBeInTheDocument();
     const post = fetchMock.mock.calls.find((call) => String(call[0]).includes("/api/relationship-brief"));
@@ -107,7 +112,69 @@ describe("Relationship Copilot credential states", () => {
     expect(JSON.stringify(post)).not.toContain(FAKE_KEY);
   });
 
-  it("shows Live AI, OpenAI, model and generation time on live success", async () => {
+  it("offers neutral context, LinkedIn action, and a deterministic relationship summary", async () => {
+    const fetchMock = mockApis({
+      ok: true,
+      mode: "demo",
+      brief: demoBrief,
+      provider: "deterministic-demo",
+      model: "none",
+      generatedAt: "2026-09-10T12:00:00.000Z",
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+    const writeText = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue(undefined);
+    renderCopilot();
+
+    await generateBrief(user);
+
+    expect(screen.getByText(demoBrief.counterEvidence[0]).closest("li")).toHaveClass("copilot-context-note");
+    expect(screen.queryByText("Email draft")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Copy LinkedIn message" }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(demoBrief.linkedInDraft));
+
+    expect(screen.getByText("Audio summary")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Listen to brief summary" })).toBeInTheDocument();
+  });
+
+  it("reads a demo relationship summary with browser speech synthesis", async () => {
+    const speak = vi.fn();
+    const cancel = vi.fn();
+    vi.stubGlobal("speechSynthesis", { speak, cancel });
+    vi.stubGlobal(
+      "SpeechSynthesisUtterance",
+      class {
+        text: string;
+        onend: (() => void) | null = null;
+        onerror: (() => void) | null = null;
+        constructor(text: string) {
+          this.text = text;
+        }
+      },
+    );
+    vi.stubGlobal(
+      "fetch",
+      mockApis({
+        ok: true,
+        mode: "demo",
+        brief: demoBrief,
+        provider: "deterministic-demo",
+        model: "none",
+        generatedAt: "2026-09-10T12:00:00.000Z",
+      }),
+    );
+    const user = userEvent.setup();
+    renderCopilot();
+
+    await generateBrief(user);
+    await user.click(screen.getByRole("button", { name: "Listen to brief summary" }));
+
+    expect(speak).toHaveBeenCalledWith(
+      expect.objectContaining({ text: expect.stringContaining("Deterministic demo brief for Marcus") }),
+    );
+  });
+
+  it("stores a live brief without exposing provider metadata", async () => {
     sessionStorage.setItem("grain-openai-mode", "live");
     const fetchMock = mockApis({
       ok: true,
@@ -124,43 +191,22 @@ describe("Relationship Copilot credential states", () => {
     await generateBrief(user);
 
     await waitFor(() => {
-      expect(
-        screen.getByText("Live AI · OpenAI · gpt-5.4-mini · 2026-09-10T15:30:00.000Z"),
-      ).toBeInTheDocument();
+      expect(screen.getByText(demoBrief.summary)).toBeInTheDocument();
     });
+    expect(screen.queryByText(/Live AI · OpenAI/)).not.toBeInTheDocument();
     const post = fetchMock.mock.calls.find((call) => String(call[0]).includes("/api/relationship-brief"));
     expect(JSON.parse(String((post?.[1] as RequestInit | undefined)?.body))).toMatchObject({ mode: "live" });
   });
 
   it.each([
-    [
-      "not_configured",
-      "Live AI is not configured. Add an OpenAI API key in Settings.",
-      true,
-    ],
-    [
-      "invalid_credentials",
-      "The configured OpenAI key was rejected. Replace it in Settings.",
-      true,
-    ],
-    [
-      "usage_exhausted",
-      "This browser has used its live AI allowance. Showing the safe demo brief.",
-      false,
-    ],
-    [
-      "provider_error",
-      "OpenAI is temporarily unavailable. Showing the safe demo brief.",
-      false,
-    ],
-    ["invalid_request", "The brief request was invalid. Showing the safe demo brief.", false],
-    ["invalid_schema", "Live AI returned an unusable brief. Showing the safe demo brief.", false],
-    [
-      "unsupported_evidence",
-      "Live AI cited evidence that is not allowed. Showing the safe demo brief.",
-      false,
-    ],
-  ] as const)("maps %s to friendly copy", async (code, message, settingsLink) => {
+    "not_configured",
+    "invalid_credentials",
+    "usage_exhausted",
+    "provider_error",
+    "invalid_request",
+    "invalid_schema",
+    "unsupported_evidence",
+  ])("keeps the fallback brief without a technical notice for %s", async (code) => {
     sessionStorage.setItem("grain-openai-mode", "live");
     vi.stubGlobal(
       "fetch",
@@ -171,23 +217,12 @@ describe("Relationship Copilot credential states", () => {
     await generateBrief(user);
 
     await waitFor(() => {
-      expect(screen.getByText(message)).toBeInTheDocument();
-      expect(screen.getByText(/Deterministic fallback/)).toBeInTheDocument();
+      expect(screen.getByText(demoBrief.summary)).toBeInTheDocument();
     });
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Deterministic fallback/)).not.toBeInTheDocument();
     expect(screen.queryByText(code)).not.toBeInTheDocument();
     expect(screen.queryByText("missing_key")).not.toBeInTheDocument();
-    if (settingsLink) {
-      expect(screen.getByRole("link", { name: "Open Settings" })).toHaveAttribute("href", "/settings");
-    } else {
-      expect(screen.queryByRole("link", { name: "Open Settings" })).not.toBeInTheDocument();
-    }
-  });
-
-  it("never surfaces missing_key as user-visible copy", () => {
-    expect(copilotUserNotice("missing_key").message).toBe(
-      "Live AI is not configured. Add an OpenAI API key in Settings.",
-    );
-    expect(copilotUserNotice("missing_key").message).not.toContain("missing_key");
   });
 
   it("keeps the cached brief when an API error has no safe fallback", async () => {
@@ -199,8 +234,9 @@ describe("Relationship Copilot credential states", () => {
     await generateBrief(user);
 
     await waitFor(() => {
-      expect(screen.getByText("Cached demo example · cached-example/none · cached")).toBeInTheDocument();
+      expect(screen.getByText(CACHED_MARCUS_BRIEF.summary)).toBeInTheDocument();
     });
+    expect(screen.queryByText(/Cached demo example/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Cannot read properties/)).not.toBeInTheDocument();
   });
 });

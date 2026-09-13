@@ -11,21 +11,38 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StackList } from "@/components/ui/table";
 import { Toolbar } from "@/components/ui/toolbar";
 import { CONFERENCES } from "@/data/conferences";
-import { FULL_PROFILE_IDS, PROFILES, type FullProfileId } from "@/data/prep-snapshots";
+import { ALL_PROFILES, PREP_SNAPSHOTS, PROFILE_CONFERENCE_IDS } from "@/data/prep-snapshots";
+import type { ContactRecord } from "@/domain/types";
 import { deriveRelationshipEligibility } from "@/features/relationships/eligibility";
 import { useWorkspace } from "@/workspace/provider";
 
 export function RelationshipsView() {
   const { state, dispatch } = useWorkspace();
   const [query, setQuery] = useState("");
+  const [conferenceFilter, setConferenceFilter] = useState("all");
   const pending = state.matchReviews.filter((review) => itemPending(review.status));
+  const conferenceForContact = (contactId: string) => {
+    const snapshot = PREP_SNAPSHOTS.find((candidate) => candidate.records.some((record) => record.personId === contactId));
+    const conferenceId = PROFILE_CONFERENCE_IDS[contactId] ?? snapshot?.conferenceId;
+    return conferenceId
+      ? CONFERENCES.find((item) => item.id === conferenceId || item.demoScenarioId === conferenceId)
+      : undefined;
+  };
   const contacts = useMemo(() => {
     const lowered = query.trim().toLowerCase();
-    if (!lowered) return state.contacts;
-    return state.contacts.filter((contact) =>
-      `${contact.name} ${contact.company} ${contact.role}`.toLowerCase().includes(lowered),
-    );
-  }, [query, state.contacts]);
+    // Keep the Relationships index complete when a browser has an older
+    // persisted workspace that predates newly sourced conference profiles.
+    // State contacts still win, so captured/edited CRM data is preserved.
+    const profileContacts = Object.values(ALL_PROFILES).map(profileToContact);
+    const contactsById = new Map(profileContacts.map((contact) => [contact.id, contact]));
+    for (const contact of state.contacts) contactsById.set(contact.id, contact);
+    return Array.from(contactsById.values()).filter((contact) => {
+      const conference = conferenceForContact(contact.id);
+      const matchesConference = conferenceFilter === "all" || conference?.id === conferenceFilter;
+      const matchesQuery = !lowered || `${contact.name} ${contact.company} ${contact.role}`.toLowerCase().includes(lowered);
+      return matchesConference && matchesQuery;
+    });
+  }, [conferenceFilter, query, state.contacts]);
 
   return (
     <section className="page-stack" aria-labelledby="relationships-title">
@@ -83,6 +100,13 @@ export function RelationshipsView() {
             <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name or company" />
           </span>
         </label>
+        <label className="field-label">
+          Conference
+          <select value={conferenceFilter} onChange={(event) => setConferenceFilter(event.target.value)}>
+            <option value="all">All conferences</option>
+            {CONFERENCES.map((conference) => <option key={conference.id} value={conference.id}>{conference.name}</option>)}
+          </select>
+        </label>
       </Toolbar>
       <StackList className="relationship-lead-list">
         {contacts.map((contact) => {
@@ -90,7 +114,7 @@ export function RelationshipsView() {
             state.timeline.filter((entry) => entry.personId === contact.id),
           );
           const profile = profileFor(contact.id);
-          const conference = CONFERENCES.find((item) => item.demoScenarioId === "money20-eu-demo");
+          const conference = conferenceForContact(contact.id);
           const latestSignal = profile?.recentSignals[0] ? cleanDemoCopy(profile.recentSignals[0]) : "No recent signal captured yet.";
           const priorCommunicationRaw = profile?.relationshipHistory.find((item) => !/^none\.?$/i.test(item));
           const priorCommunication = priorCommunicationRaw ? cleanDemoCopy(priorCommunicationRaw) : "No prior communication recorded.";
@@ -127,8 +151,20 @@ export function RelationshipsView() {
   );
 }
 
+function profileToContact(profile: (typeof ALL_PROFILES)[keyof typeof ALL_PROFILES]): ContactRecord {
+  return {
+    id: profile.id,
+    name: profile.name,
+    company: profile.company,
+    role: profile.title,
+    domain: profile.contact.email?.value.split("@")[1],
+    email: profile.contact.email ?? undefined,
+    linkedIn: profile.contact.linkedIn,
+  };
+}
+
 function profileFor(contactId: string) {
-  return FULL_PROFILE_IDS.includes(contactId as FullProfileId) ? PROFILES[contactId as FullProfileId] : null;
+  return ALL_PROFILES[contactId] ?? null;
 }
 
 function cleanDemoCopy(value: string): string {

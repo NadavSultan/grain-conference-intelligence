@@ -5,7 +5,7 @@ import { useState } from "react";
 import { AtSign, CheckCircle2, ExternalLink, Mail, MessageCircle, Sparkles, X } from "lucide-react";
 
 import { CONFERENCES } from "@/data/conferences";
-import { FULL_PROFILE_IDS, PROFILES, type FullProfileId } from "@/data/prep-snapshots";
+import { ALL_PROFILES, PROFILE_CONFERENCE_IDS } from "@/data/prep-snapshots";
 import { RelationshipCopilot } from "@/components/copilot/relationship-copilot";
 import { SyncPreview } from "@/components/crm/sync-preview";
 import { Badge } from "@/components/ui/badge";
@@ -26,15 +26,27 @@ const LABELS: Record<TimelineKind, string> = {
 
 export function RelationshipDetail({ contactId }: { contactId: string }) {
   const { state, dispatch } = useWorkspace();
-  const contact = state.contacts.find((item) => item.id === contactId);
+  const profile = ALL_PROFILES[contactId] ?? null;
+  // Prep can contain a newly sourced profile before it has been written to the
+  // persisted CRM contact list. Use the canonical profile as the read-only
+  // contact view so both entry points open the same relationship page.
+  const contact = state.contacts.find((item) => item.id === contactId) ??
+    (profile
+      ? {
+          id: profile.id,
+          name: profile.name,
+          company: profile.company,
+          role: profile.title,
+          domain: profile.contact.email?.value.split("@")[1],
+          email: profile.contact.email ?? undefined,
+          linkedIn: profile.contact.linkedIn,
+        }
+      : null);
   const entries = state.timeline
     .filter((entry) => entry.personId === contactId)
     .sort((left, right) => left.occurredAt.localeCompare(right.occurredAt));
   const planned = state.plannedMeetings.filter((meeting) => meeting.personId === contactId);
   const eligibility = deriveRelationshipEligibility(entries);
-  const profile = FULL_PROFILE_IDS.includes(contactId as FullProfileId)
-    ? PROFILES[contactId as FullProfileId]
-    : null;
   const conferenceNames = Array.from(
     new Set(
       [...entries.map((entry) => entry.conferenceId), ...planned.map((meeting) => meeting.conferenceId)]
@@ -49,8 +61,15 @@ export function RelationshipDetail({ contactId }: { contactId: string }) {
   const profileConferenceContext = conferenceNames.length
     ? conferenceNames.join(", ")
     : profile
-      ? "Money20/20 Europe (research context)"
+      ? `${CONFERENCES.find((item) => item.id === PROFILE_CONFERENCE_IDS[contactId] || item.demoScenarioId === PROFILE_CONFERENCE_IDS[contactId])?.name ?? "Conference"} (research context)`
       : "None recorded";
+  const profileConference = PROFILE_CONFERENCE_IDS[contactId]
+    ? CONFERENCES.find(
+        (item) =>
+          item.id === PROFILE_CONFERENCE_IDS[contactId] ||
+          item.demoScenarioId === PROFILE_CONFERENCE_IDS[contactId],
+      )
+    : undefined;
   const profileSignals = profile?.recentSignals.slice(0, 3) ?? [];
   const profilePainPoints = profile?.whyThisPersonMatters
     .filter((item) => /currency|settlement|treasury|hedg|margin|payout|exposure|cross-border/i.test(item))
@@ -90,9 +109,19 @@ export function RelationshipDetail({ contactId }: { contactId: string }) {
           { label: contact.name },
         ]}
         actions={
-          <Link href="/relationships" className={buttonClassName("ghost", "sm")}>
-            All relationships
-          </Link>
+          <div className="relationship-detail-header-actions">
+            <Link href="/relationships" className={buttonClassName("ghost", "sm")}>
+              All relationships
+            </Link>
+            {profileConference ? (
+              <Link
+                href={`/conferences/${profileConference.id}`}
+                className={buttonClassName("ghost", "sm")}
+              >
+                Back to conference
+              </Link>
+            ) : null}
+          </div>
         }
       />
       {profile ? (
@@ -147,7 +176,7 @@ export function RelationshipDetail({ contactId }: { contactId: string }) {
                 <textarea id="outreach-message" className="outreach-modal-textarea" value={message} onChange={(event) => setMessage(event.target.value)} rows={8} />
                 <div className="outreach-modal-footer">
                   {sent ? <span className="outreach-sent">Message ready to send</span> : <span className="outreach-modal-hint">Review the conference context, then send when ready.</span>}
-                  <div className="outreach-modal-actions"><button type="button" className={buttonClassName("ghost", "sm")} onClick={() => setIsReachOutOpen(false)}>Cancel</button><button type="button" className={buttonClassName("primary", "sm")} onClick={() => { dispatch({ type: "timeline/add-outreach", personId: contact.id, conferenceId: "money20-eu-demo", company: profile.company, role: profile.title, summary: `Outreach sent via ${profile.drafts.linkedIn ? "LinkedIn" : "email"}.`, occurredAt: new Date().toISOString() }); dispatch({ type: "prep/set-status", conferenceId: "money20-eu-demo", personId: contact.id, status: "contacted" }); setSent(true); }}>Send</button></div>
+                  <div className="outreach-modal-actions"><button type="button" className={buttonClassName("ghost", "sm")} onClick={() => setIsReachOutOpen(false)}>Cancel</button><button type="button" className={buttonClassName("primary", "sm")} onClick={() => { const conferenceId = PROFILE_CONFERENCE_IDS[contact.id] ?? "money20-eu-demo"; dispatch({ type: "timeline/add-outreach", personId: contact.id, conferenceId, company: profile.company, role: profile.title, summary: `Outreach sent via ${profile.drafts.linkedIn ? "LinkedIn" : "email"}.`, occurredAt: new Date().toISOString() }); dispatch({ type: "prep/set-status", conferenceId, personId: contact.id, status: "contacted" }); setSent(true); }}>Send</button></div>
                 </div>
               </div>
             </div>
@@ -235,7 +264,7 @@ export function RelationshipDetail({ contactId }: { contactId: string }) {
           <RelationshipCopilot
             personId={contactId}
             companyId={contact.company.toLowerCase().replace(/[^a-z0-9]+/g, "-")}
-            conferenceId={entries[0]?.conferenceId}
+            conferenceId={entries[0]?.conferenceId ?? PROFILE_CONFERENCE_IDS[contact.id]}
           />
           <SyncPreview
             contactId={contactId}
@@ -246,8 +275,8 @@ export function RelationshipDetail({ contactId }: { contactId: string }) {
             }
             crmState={contactId === "david" ? "owned_by_other" : contactId === "marcus" ? "owned_by_me" : "not_present"}
             conferenceName={
-              CONFERENCES.find((item) => item.demoScenarioId === "money20-eu-demo")?.name ??
-              "Money20/20 Europe"
+              CONFERENCES.find((item) => item.id === PROFILE_CONFERENCE_IDS[contact.id] || item.demoScenarioId === PROFILE_CONFERENCE_IDS[contact.id])?.name ??
+              "Conference"
             }
           />
         </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowUpRight, PlaneTakeoff } from "lucide-react";
 
 import { Alert } from "@/components/ui/alert";
 import { Badge, decisionTone, humanizeToken, tierTone } from "@/components/ui/badge";
@@ -87,6 +88,22 @@ function ConferenceBriefReportView({ report }: { report: ConferenceBriefReport }
           </p>
         </div>
       </section>
+
+      <a
+        className="flight-ticket-card"
+        href="https://www.google.com/travel/flights"
+        target="_blank"
+        rel="noreferrer"
+        aria-label={`Find flights for ${report.name}`}
+      >
+        <span className="flight-ticket-icon" aria-hidden="true"><PlaneTakeoff size={20} /></span>
+        <span className="flight-ticket-copy">
+          <span className="eyebrow">Travel planning</span>
+          <strong>Find flights to {report.location.split(",")[0]}</strong>
+          <span>Compare routes and timings before booking your conference trip.</span>
+        </span>
+        <ArrowUpRight className="flight-ticket-arrow" size={18} aria-hidden="true" />
+      </a>
 
       <Card>
         <CardHeader title="Scoring breakdown" />

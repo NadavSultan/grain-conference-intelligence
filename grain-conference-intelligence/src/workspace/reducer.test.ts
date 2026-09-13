@@ -113,6 +113,86 @@ describe("workspace reducer", () => {
     expect(next.matchReviews[0]?.candidateIds).toContain("sam");
     expect(next.contacts.some((contact) => contact.id.startsWith("captured-"))).toBe(true);
   });
+
+  it("deletes a captured encounter and restores its planned meeting", () => {
+    const seed = createDemoWorkspace();
+    const captured = workspaceReducer(seed, {
+      type: "capture/save",
+      name: "Marcus Oyelaran",
+      company: "Payloom",
+      conferenceId: "money20-eu-demo",
+      occurredAt: "2026-06-03T12:00:00.000Z",
+      note: "Agreed a corridor walkthrough next Tuesday.",
+      role: "Treasury Director",
+      plannedMeetingId: "pm-marcus",
+    });
+    const encounter = captured.timeline.find((entry) => entry.plannedMeetingId === "pm-marcus");
+    const next = workspaceReducer(captured, { type: "capture/delete", encounterId: encounter!.id });
+
+    expect(next.timeline.some((entry) => entry.id === encounter?.id)).toBe(false);
+    expect(next.plannedMeetings.find((meeting) => meeting.id === "pm-marcus")?.outcome).toBe("planned");
+    expect(next.timeline.some((entry) => entry.id === "enc-marcus-money20-prior")).toBe(true);
+  });
+
+  it("deletes an unplanned capture and its generated contact", () => {
+    const seed = createDemoWorkspace();
+    const captured = workspaceReducer(seed, {
+      type: "capture/save",
+      name: "New Contact",
+      company: "New Company",
+      conferenceId: "money20-eu-demo",
+      occurredAt: "2026-06-03T13:00:00.000Z",
+      note: "Met at the coffee line.",
+      role: "Head of Treasury",
+    });
+    const encounter = captured.timeline.find((entry) => entry.id.startsWith("enc-captured-"));
+    const next = workspaceReducer(captured, { type: "capture/delete", encounterId: encounter!.id });
+
+    expect(next.timeline.some((entry) => entry.id === encounter?.id)).toBe(false);
+    expect(next.contacts.some((contact) => contact.id === encounter?.personId)).toBe(false);
+  });
+
+  it("updates a captured encounter in place", () => {
+    const captured = workspaceReducer(createDemoWorkspace(), {
+      type: "capture/save",
+      name: "Alex Morgan",
+      company: "Northwind",
+      conferenceId: "money20-eu-demo",
+      occurredAt: "2026-06-03T14:00:00.000Z",
+      note: "Initial note",
+      role: "Treasury Lead",
+    });
+    const encounter = captured.timeline.find((entry) => entry.id.startsWith("enc-captured-"));
+    const next = workspaceReducer(captured, {
+      type: "capture/update",
+      encounterId: encounter!.id,
+      name: "Alex Morgan",
+      company: "Northwind Group",
+      conferenceId: "eurofinance-2026",
+      occurredAt: "2026-06-03T14:00:00.000Z",
+      note: "Updated note",
+      role: "VP Treasury",
+      email: "alex@northwind.com",
+      linkedIn: "https://linkedin.com/in/alex",
+      nextStep: "Send times",
+      reciprocal: true,
+    });
+
+    const updated = next.timeline.find((entry) => entry.id === encounter!.id);
+    expect(updated).toMatchObject({
+      company: "Northwind Group",
+      conferenceId: "eurofinance-2026",
+      summary: "Updated note",
+      role: "VP Treasury",
+      nextStep: "Send times",
+      reciprocal: true,
+    });
+    expect(next.contacts.find((contact) => contact.id === updated?.personId)).toMatchObject({
+      company: "Northwind Group",
+      role: "VP Treasury",
+      email: { value: "alex@northwind.com" },
+    });
+  });
 });
 
 describe("workspace persistence boundary", () => {

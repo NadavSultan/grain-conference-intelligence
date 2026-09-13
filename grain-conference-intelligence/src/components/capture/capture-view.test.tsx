@@ -54,6 +54,16 @@ afterEach(() => {
 });
 
 describe("CaptureView voice fill", () => {
+  it("shows a readable date without the raw timestamp suffix", async () => {
+    const user = userEvent.setup();
+    render(<CaptureView />);
+    await openUnplannedForm(user);
+
+    const provenance = document.querySelector(".provenance");
+    expect(provenance).toHaveTextContent(/Conference Money20\/20 Europe · (?:Jun 3, 2026|3 Jun 2026)/);
+    expect(provenance).not.toHaveTextContent(/T12:00:00\.000Z/);
+  });
+
   it("fills every spoken field into the form", async () => {
     const user = userEvent.setup();
     render(<CaptureView />);
@@ -91,6 +101,22 @@ describe("CaptureView voice fill", () => {
         conferenceId: "money20-eu-demo",
         occurredAt: "2026-06-03T12:00:00.000Z",
       }),
+    );
+  });
+
+  it("allows an unplanned meeting to be assigned to a conference", async () => {
+    const user = userEvent.setup();
+    render(<CaptureView />);
+    await openUnplannedForm(user);
+
+    await user.selectOptions(screen.getByLabelText("Conference"), "eurofinance-2026");
+    await user.type(screen.getByLabelText(/^Name/), "Alex Morgan");
+    await user.type(screen.getByLabelText(/^Company/), "Northwind");
+    await user.type(screen.getByLabelText(/Short note/), "Discussed treasury workflow.");
+    await user.click(screen.getByRole("button", { name: /save encounter/i }));
+
+    expect(dispatchMock).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "capture/save", conferenceId: "eurofinance-2026" }),
     );
   });
 });

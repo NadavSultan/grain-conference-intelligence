@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Copy, Link2, Mail, MessageSquare } from "lucide-react";
 
 import { CONFERENCES } from "@/data/conferences";
-import { ALL_EVIDENCE, PREP_SNAPSHOTS, PROFILES, type FullProfileId } from "@/data/prep-snapshots";
+import { ALL_EVIDENCE, PREP_SNAPSHOTS, ALL_PROFILES } from "@/data/prep-snapshots";
 import type { PrepStatus } from "@/domain/types";
 import { snapshotForConference } from "@/features/conferences/scoring";
 import { canProspect, linkedInHref, mailtoHref, slackHref } from "@/features/prep/actions";
@@ -34,7 +34,7 @@ export function OutreachProfile({
 }) {
   const { state, dispatch } = useWorkspace();
   const conference = CONFERENCES.find((item) => item.id === conferenceId);
-  const profile = personId in PROFILES ? PROFILES[personId as FullProfileId] : null;
+  const profile = ALL_PROFILES[personId] ?? null;
   const researchKey = conference?.demoScenarioId ?? conferenceId;
   const snapshot = conference
     ? snapshotForConference(conference, PREP_SNAPSHOTS, state.activeSnapshotIds)

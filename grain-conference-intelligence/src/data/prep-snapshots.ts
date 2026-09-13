@@ -11,6 +11,13 @@ import type {
 export const FULL_PROFILE_IDS = ["sam", "david", "priya", "marcus"] as const;
 export type FullProfileId = (typeof FULL_PROFILE_IDS)[number];
 
+export const PROFILE_CONFERENCE_IDS: Record<string, string> = {
+  sam: "money20-eu-demo",
+  david: "money20-eu-demo",
+  priya: "money20-eu-demo",
+  marcus: "money20-eu-demo",
+};
+
 interface DraftFixture {
   sourceLabel: string;
   subject: string | null;
@@ -19,7 +26,7 @@ interface DraftFixture {
 }
 
 interface ProfileFixture {
-  id: FullProfileId;
+  id: string;
   fictionalLabel: "Fictional demo scenario";
   name: string;
   title: string;
@@ -80,7 +87,7 @@ function fictionalEvidence(
     claim,
     quote,
     exhibitUrl: `/evidence/${
-      personId && FULL_PROFILE_IDS.includes(personId as FullProfileId)
+      personId && (FULL_PROFILE_IDS.includes(personId as FullProfileId) || personId === "emma" || personId === "liam")
         ? personId
         : "edge-fixtures"
     }.html#${id}`,
@@ -104,6 +111,53 @@ const marcusEmailBody =
   "Hi Marcus, we spoke at Grain's booth last year. You were hedging the majors through your bank and absorbing the rest while you evaluated options. Since then you've raised and committed to 12 new corridors across Africa and LATAM, which sounds like ‘the rest’ just became the main event. I'll be at your fireside chat Wednesday. Could we grab 20 minutes afterwards? I'd like to show you what we've built for exactly those corridors since we last spoke. Best, [Rep]";
 const marcusLinkedInBody =
   "Hi Marcus, good to see you're speaking again this year. We spoke at the booth last time about hedging beyond the majors. With the 12 new corridors, that problem's probably grown. I'll be at your session Wednesday. Twenty minutes after for a coffee?";
+
+function euroProfile(
+  id: "emma" | "liam",
+  name: string,
+  title: string,
+  company: string,
+  email: string,
+  linkedIn: string,
+  roleClaim: string,
+  companyClaim: string,
+  signal: string,
+  angle: string,
+  draftBody: string,
+): ProfileFixture {
+  const companyId = company.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const prefix = `${id}-`;
+  return {
+    id,
+    fictionalLabel: "Fictional demo scenario",
+    name,
+    title,
+    company,
+    headline: "Confirmed attending · Tier A · Not in HubSpot",
+    prepStatus: "To contact",
+    contact: { linkedIn: { value: linkedIn, confidence: "verified" }, email: { value: email, confidence: "verified" } },
+    actions: { openEmail: true, exactCrmIdentity: false },
+    attendanceEvidence: [`Confirmed attending: ${name} is listed for EuroFinance International Treasury Management. — Verified fictional exhibit.`],
+    whyThisPersonMatters: [roleClaim, companyClaim, "Treasury role indicates a relevant buyer conversation for cross-border FX workflows — inferred from role, not an authorization fact."],
+    relationshipHistory: ["None. No HubSpot record for the person or the company."],
+    recentSignals: [signal, "1 week ago — EuroFinance attendee profile lists treasury and cross-border priorities."],
+    suggestedAngle: angle,
+    coordinationStep: null,
+    requiresCoordination: false,
+    relationshipRead: { label: "No prior relationship", text: null, counterEvidence: [] },
+    drafts: { email: null, linkedIn: draft("Draft LinkedIn DM (illustrative source label)", null, draftBody) },
+    nextAction: "Send the LinkedIn message before the conference and qualify the current FX workflow.",
+    scheduleWarning: SCHEDULE_WARNING,
+    evidence: [
+      fictionalEvidence(`${prefix}attendance`, id, companyId, `${name} is listed as a current-edition EuroFinance attendee.`, null, "EuroFinance attendee exhibit", "verified", "2026-09-02"),
+      fictionalEvidence(`${prefix}role`, id, companyId, roleClaim, null, "Profile exhibit", "verified", "2026-09-02"),
+      fictionalEvidence(`${prefix}company`, id, companyId, companyClaim, null, "Company exhibit", "verified", "2026-09-02"),
+      fictionalEvidence(`${prefix}signal`, id, companyId, signal, null, "Public signal exhibit", "cited", "2026-09-01"),
+      fictionalEvidence(`${prefix}linkedin`, id, companyId, `Verified LinkedIn profile for ${name}.`, null, "LinkedIn exhibit", "verified", "2026-09-02"),
+      fictionalEvidence(`${prefix}crm-gap`, id, companyId, "No HubSpot record for the person or the company.", null, "CRM gap exhibit", "unknown", null),
+    ],
+  };
+}
 
 export const PROFILES: Record<FullProfileId, ProfileFixture> = {
   sam: {
@@ -366,6 +420,29 @@ export const PROFILES: Record<FullProfileId, ProfileFixture> = {
   },
 };
 
+export const ADDITIONAL_PROFILES = {
+  emma: euroProfile(
+    "emma", "Emma Rossi", "VP Treasury", "AtlasPay Europe", "emma.rossi@atlaspay.example", "linkedin.com/in/emma-rossi-treasury",
+    "VP Treasury overseeing liquidity and FX operations across AtlasPay Europe's payment corridors.",
+    "AtlasPay Europe is a fictional cross-border payments platform expanding settlement coverage across the eurozone and the Nordics.",
+    "2 days ago — Emma shared that her team is reviewing treasury controls before the next corridor launch.",
+    "Lead with corridor expansion and ask how AtlasPay balances local settlement timing against centralised FX execution.",
+    "Hi Emma, I saw you'll be at EuroFinance. I'd be interested in comparing notes on treasury controls for new payment corridors. Would a short coffee during the event be useful?",
+  ),
+  liam: euroProfile(
+    "liam", "Liam Becker", "Director of Corporate Treasury", "Meridian Commerce Group", "liam.becker@meridiancommerce.example", "linkedin.com/in/liam-becker-treasury",
+    "Director of Corporate Treasury responsible for liquidity planning and cross-border exposure at Meridian Commerce Group.",
+    "Meridian Commerce Group is a fictional European commerce business with suppliers and customers settled in multiple currencies.",
+    "4 days ago — Liam commented on a treasury discussion about forward coverage for committed inventory.",
+    "Ask how Meridian decides which committed cash flows to hedge and where the current process creates manual work.",
+    "Hi Liam, I noticed your treasury perspective on forward coverage and that you'll be at EuroFinance. Open to a quick exchange on how you manage committed cross-border cash flows?",
+  ),
+} as const;
+
+export const ALL_PROFILES: Record<string, ProfileFixture> = { ...PROFILES, ...ADDITIONAL_PROFILES };
+PROFILE_CONFERENCE_IDS.emma = "eurofinance-2026";
+PROFILE_CONFERENCE_IDS.liam = "eurofinance-2026";
+
 const COMPANY_IDS: Record<FullProfileId, string> = {
   sam: "acme-payments",
   david: "northwind-travel",
@@ -621,7 +698,7 @@ export const EDGE_EVIDENCE: EvidenceRecord[] = [
 ];
 
 export const ALL_EVIDENCE: EvidenceRecord[] = [
-  ...Object.values(PROFILES).flatMap((profile) => profile.evidence),
+  ...Object.values(ALL_PROFILES).flatMap((profile) => profile.evidence),
   ...EDGE_EVIDENCE,
 ];
 
@@ -662,6 +739,8 @@ const euroFinanceSnapshot = prepSnapshotSchema.parse({
   researchedAt: "2026-09-02T07:30:00.000Z",
   simulatedAt: null,
   records: [
+    { id: "euro-emma", personId: "emma", companyId: "atlaspay-europe", attendanceConfidence: "confirmed", companyTier: "A", roleFit: "decision_maker", crmState: "not_present", prepStatus: "to_contact", evidenceIds: ["emma-attendance", "emma-role"], currentEdition: true, cancelled: false },
+    { id: "euro-liam", personId: "liam", companyId: "meridian-commerce-group", attendanceConfidence: "likely", companyTier: "A", roleFit: "decision_maker", crmState: "not_present", prepStatus: "to_contact", evidenceIds: ["liam-attendance", "liam-role"], currentEdition: true, cancelled: false },
     { id: "euro-open-deal", personId: "edge-open-deal", companyId: "fictional-open-deal-co", attendanceConfidence: "confirmed", companyTier: "A", roleFit: "decision_maker", crmState: "open_deal", prepStatus: "to_contact", evidenceIds: ["edge-open-deal-evidence"], currentEdition: true, cancelled: false },
     { id: "euro-returner", personId: "edge-returner", companyId: "fictional-returner-co", attendanceConfidence: "probable_returner", companyTier: "A", roleFit: "influencer", crmState: "unknown", prepStatus: "to_contact", evidenceIds: ["edge-returner-evidence"], currentEdition: false, cancelled: false },
     { id: "euro-company-only", personId: null, companyId: "meridian-remit", attendanceConfidence: "likely", companyTier: "A", roleFit: "unknown", crmState: "not_present", prepStatus: "to_contact", evidenceIds: ["edge-company-only-evidence"], currentEdition: true, cancelled: false },

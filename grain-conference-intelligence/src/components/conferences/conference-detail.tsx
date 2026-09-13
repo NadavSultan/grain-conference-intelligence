@@ -135,7 +135,7 @@ export function ConferenceDetail({ conferenceId }: { conferenceId: string }) {
           <ScorePanel
             score={score}
             audienceSizeLabel={audienceSizeLabel(conference)}
-            demoWarning={conference.demoDateWarning}
+            conferenceStartDate={conference.startDate}
           />
           <PlanControls
             plan={plan}

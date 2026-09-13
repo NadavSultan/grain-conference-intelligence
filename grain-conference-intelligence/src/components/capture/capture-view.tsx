@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Pencil, Trash2 } from "lucide-react";
 
 import { Alert } from "@/components/ui/alert";
 import { VoiceCapturePanel } from "@/components/capture/voice-capture-panel";
@@ -30,7 +31,13 @@ export function CaptureView({ meetingId }: { meetingId?: string }) {
   const { state, dispatch } = useWorkspace();
   const router = useRouter();
   const planned = state.plannedMeetings.filter((meeting) => meeting.outcome === "planned");
+  const capturedEncounters = state.timeline.filter(
+    (entry) =>
+      entry.kind === "actual_encounter" &&
+      (Boolean(entry.plannedMeetingId) || entry.id.startsWith("enc-captured-")),
+  );
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [editingEncounterId, setEditingEncounterId] = useState<string | null>(null);
   const [formVisible, setFormVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setField] = useState<CaptureDraft>(EMPTY_FORM);
@@ -48,11 +55,20 @@ export function CaptureView({ meetingId }: { meetingId?: string }) {
     [form.conferenceId],
   );
 
-  const capturedCount = state.plannedMeetings.filter((meeting) => meeting.outcome === "met").length;
+  const capturedCount = capturedEncounters.length;
+  const conferenceIdFor = (value: string) =>
+    CONFERENCES.find((conference) => conference.id === value || conference.demoScenarioId === value)?.id ?? value;
+  const conferenceMatches = (value: string) =>
+    conferenceFilter === "all" || conferenceIdFor(value) === conferenceFilter;
   const visibleMeetings = planned.filter((meeting) => {
     const person = meeting.personId in PROFILES ? PROFILES[meeting.personId as FullProfileId] : null;
     const haystack = `${person?.name ?? meeting.personId} ${person?.company ?? ""} ${meeting.context}`.toLowerCase();
-    return (conferenceFilter === "all" || meeting.conferenceId === conferenceFilter) && haystack.includes(query.toLowerCase());
+    return conferenceMatches(meeting.conferenceId) && haystack.includes(query.toLowerCase());
+  });
+  const visibleCapturedEncounters = capturedEncounters.filter((encounter) => {
+    const contact = state.contacts.find((item) => item.id === encounter.personId);
+    const haystack = `${contact?.name ?? encounter.personId} ${encounter.company} ${encounter.summary}`.toLowerCase();
+    return conferenceMatches(encounter.conferenceId) && haystack.includes(query.toLowerCase());
   });
 
   function formFromMeeting(plannedMeetingId: string): CaptureDraft {
@@ -109,6 +125,7 @@ export function CaptureView({ meetingId }: { meetingId?: string }) {
   function openMet(plannedMeetingId: string) {
     router.push(`/capture/${plannedMeetingId}`);
     setActiveId(plannedMeetingId);
+    setEditingEncounterId(null);
     setError(null);
     resetVoice();
     setField(formFromMeeting(plannedMeetingId));
@@ -118,9 +135,33 @@ export function CaptureView({ meetingId }: { meetingId?: string }) {
   function openUnplanned() {
     const saved = state.captureDrafts.unplanned;
     setActiveId(null);
+    setEditingEncounterId(null);
     setError(null);
     resetVoice();
     setField(saved ?? EMPTY_FORM);
+    setFormVisible(true);
+  }
+
+  function openEncounterEdit(encounterId: string) {
+    const encounter = state.timeline.find((entry) => entry.id === encounterId && entry.kind === "actual_encounter");
+    if (!encounter) return;
+    const contact = state.contacts.find((item) => item.id === encounter.personId);
+    setEditingEncounterId(encounterId);
+    setActiveId(encounter.plannedMeetingId ?? null);
+    setError(null);
+    resetVoice();
+    setField({
+      name: contact?.name ?? encounter.personId,
+      company: encounter.company,
+      conferenceId: encounter.conferenceId,
+      occurredAt: encounter.occurredAt,
+      note: encounter.summary,
+      role: encounter.role ?? contact?.role ?? "",
+      email: contact?.email?.value ?? "",
+      linkedIn: contact?.linkedIn?.value ?? "",
+      nextStep: encounter.nextStep ?? "",
+      plannedMeetingId: encounter.plannedMeetingId,
+    });
     setFormVisible(true);
   }
 
@@ -138,14 +179,13 @@ export function CaptureView({ meetingId }: { meetingId?: string }) {
 
   function save() {
     setError(null);
-    const draftId = activeId ?? "unplanned";
+    const draftId = editingEncounterId ?? activeId ?? "unplanned";
     if (!form.name.trim() || !form.company.trim() || !form.note.trim() || !form.conferenceId || !form.occurredAt) {
       persistDraft({ ...form, plannedMeetingId: activeId ?? undefined }, draftId);
       setError("Name, company, conference/date, and a short note are required. The draft was kept.");
       return;
     }
-    dispatch({
-      type: "capture/save",
+    const common = {
       name: form.name.trim(),
       company: form.company.trim(),
       conferenceId: form.conferenceId,
@@ -156,8 +196,16 @@ export function CaptureView({ meetingId }: { meetingId?: string }) {
       linkedIn: form.linkedIn.trim() || undefined,
       nextStep: form.nextStep.trim() || undefined,
       reciprocal: Boolean(form.nextStep.trim()),
-      plannedMeetingId: activeId ?? undefined,
-    });
+    };
+    dispatch(
+      editingEncounterId
+        ? { type: "capture/update", encounterId: editingEncounterId, ...common }
+        : { type: "capture/save", ...common, plannedMeetingId: activeId ?? undefined },
+    );
+    setFormVisible(false);
+    setActiveId(null);
+    setEditingEncounterId(null);
+    router.push("/capture");
   }
 
   return (
@@ -171,7 +219,7 @@ export function CaptureView({ meetingId }: { meetingId?: string }) {
       {!meetingId ? <p className="capture-progress">
         {planned.length} planned {planned.length === 1 ? "meeting" : "meetings"} remaining · {capturedCount} captured
       </p> : null}
-      {!meetingId ? <div className="meeting-filters"><input aria-label="Search scheduled meetings" placeholder="Search contacts or companies" value={query} onChange={(event) => setQuery(event.target.value)} /><select aria-label="Filter by conference" value={conferenceFilter} onChange={(event) => setConferenceFilter(event.target.value)}><option value="all">All conferences</option>{CONFERENCES.filter((conference) => planned.some((meeting) => meeting.conferenceId === conference.id)).map((conference) => <option key={conference.id} value={conference.id}>{conference.name}</option>)}</select></div> : null}
+      {!meetingId ? <div className="meeting-filters"><input aria-label="Search scheduled meetings" placeholder="Search contacts or companies" value={query} onChange={(event) => setQuery(event.target.value)} /><select aria-label="Filter by conference" value={conferenceFilter} onChange={(event) => setConferenceFilter(event.target.value)}><option value="all">All conferences</option>{CONFERENCES.map((conference) => <option key={conference.id} value={conference.id}>{conference.name}</option>)}</select></div> : null}
       {!meetingId ? <ul className="conference-list">
         {visibleMeetings.map((item) => {
           const person = item.personId in PROFILES ? PROFILES[item.personId as FullProfileId] : null;
@@ -203,6 +251,50 @@ export function CaptureView({ meetingId }: { meetingId?: string }) {
           );
         })}
       </ul> : null}
+      {!meetingId && visibleCapturedEncounters.length > 0 ? <section aria-label="Captured encounters">
+        <ul className="conference-list">
+          {visibleCapturedEncounters.map((encounter) => {
+            const meeting = encounter.plannedMeetingId
+              ? state.plannedMeetings.find((item) => item.id === encounter.plannedMeetingId)
+              : null;
+            const profile = meeting && meeting.personId in PROFILES ? PROFILES[meeting.personId as FullProfileId] : null;
+            const contact = state.contacts.find((item) => item.id === encounter.personId);
+            const conference = CONFERENCES.find((item) => item.id === encounter.conferenceId || item.demoScenarioId === encounter.conferenceId);
+            return <li key={encounter.id}>
+              <article className="meeting-row">
+                <div className="meeting-row-person"><h2>{profile?.name ?? contact?.name ?? encounter.personId}</h2><span>{encounter.role ?? profile?.title ?? contact?.role ?? "Contact"}</span><strong>{encounter.company}</strong></div>
+                <div className="meeting-row-detail"><span>Conference</span><strong>{conference?.name ?? encounter.conferenceId}</strong></div>
+                <div className="meeting-row-detail"><span>Captured</span><strong>{new Date(encounter.occurredAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}</strong></div>
+                <div className="meeting-row-detail"><span>Notes</span><strong>{encounter.summary}</strong></div>
+                <div className="meeting-row-actions">
+                  <span className="ui-badge">Captured</span>
+                  <Button
+                    className="icon-button icon-button-edit"
+                    aria-label={`Edit encounter with ${profile?.name ?? contact?.name ?? encounter.personId}`}
+                    title="Edit encounter"
+                    onClick={() => openEncounterEdit(encounter.id)}
+                  >
+                    <Pencil aria-hidden="true" size={16} />
+                  </Button>
+                  <Button
+                    className="icon-button"
+                    aria-label={`Delete encounter with ${profile?.name ?? contact?.name ?? encounter.personId}`}
+                    title="Delete encounter"
+                    onClick={() => {
+                      const name = profile?.name ?? contact?.name ?? encounter.personId;
+                      if (window.confirm(`Delete the captured encounter with ${name}?`)) {
+                        dispatch({ type: "capture/delete", encounterId: encounter.id });
+                      }
+                    }}
+                  >
+                    <Trash2 aria-hidden="true" size={16} />
+                  </Button>
+                </div>
+              </article>
+            </li>;
+          })}
+        </ul>
+      </section> : null}
       {!meetingId ? <Button onClick={openUnplanned}>Update an unplanned meeting</Button> : null}
       {formVisible ? (
         <form
@@ -212,7 +304,7 @@ export function CaptureView({ meetingId }: { meetingId?: string }) {
             save();
           }}
         >
-          <h2>{meetingId ? "Update meeting" : "Unplanned meeting"}</h2>
+          <h2>{editingEncounterId ? "Edit encounter" : meetingId ? "Update meeting" : "Unplanned meeting"}</h2>
           {error ? <Alert tone="warning">{error}</Alert> : null}
           <VoiceCapturePanel onResult={applyVoice} />
           <label className="field-label">
@@ -229,8 +321,21 @@ export function CaptureView({ meetingId }: { meetingId?: string }) {
               onChange={(event) => setField({ ...form, company: event.target.value })}
             />
           </label>
+          <label className="field-label">
+            Conference
+            <select
+              value={form.conferenceId}
+              onChange={(event) => setField({ ...form, conferenceId: event.target.value })}
+            >
+              {CONFERENCES.map((conference) => (
+                <option key={conference.id} value={conference.demoScenarioId ?? conference.id}>
+                  {conference.name}
+                </option>
+              ))}
+            </select>
+          </label>
           <p className="provenance">
-            Conference {conferenceName ?? form.conferenceId} · {form.occurredAt}
+            Conference {conferenceName ?? form.conferenceId} · {new Date(form.occurredAt).toLocaleDateString([], { dateStyle: "medium" })}
           </p>
           <label className="field-label">
             Short note

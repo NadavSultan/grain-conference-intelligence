@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Badge, humanizeToken, type BadgeTone } from "@/components/ui/badge";
 import { ResponsiveSection, StackList, Table, Td, Th } from "@/components/ui/table";
 import type { AttendanceConfidence, PrepSnapshot, PrepStatus } from "@/domain/types";
-import { PROFILES } from "@/data/prep-snapshots";
+import { ALL_PROFILES } from "@/data/prep-snapshots";
 import { crmLabel } from "@/features/prep/actions";
 import {
   buildPrepViewRecords,
@@ -45,7 +45,7 @@ export function PrepList({
     previousRecords: previous?.records,
     researchKey,
     prepStatuses,
-    profiles: PROFILES,
+    profiles: ALL_PROFILES,
   });
   const summary = calculatePrepSummary(records);
   const visible = sortPrepRecords(filterPrepRecords(records, "all"));
@@ -74,9 +74,9 @@ export function PrepList({
             <tbody>
               {visible.map((record) => (
                 <tr key={record.id}>
-                  {(() => { const profile = record.personId && record.personId in PROFILES ? PROFILES[record.personId as keyof typeof PROFILES] : null; return (<>
+                  {(() => { const profile = record.personId && record.personId in ALL_PROFILES ? ALL_PROFILES[record.personId] : null; return (<>
                   <Td>
-                    {record.personId && record.personId in PROFILES ? (
+                    {record.personId && record.personId in ALL_PROFILES ? (
                       <Link href={`/conferences/${conferenceId}/prep/${record.personId}`}>
                         {record.name}
                       </Link>
@@ -112,7 +112,7 @@ export function PrepList({
                       {humanizeToken(record.roleFit)}
                     </p>
                     <h3>
-                      {record.personId && record.personId in PROFILES ? (
+                      {record.personId && record.personId in ALL_PROFILES ? (
                         <Link href={`/conferences/${conferenceId}/prep/${record.personId}`}>
                           {record.name}
                         </Link>
